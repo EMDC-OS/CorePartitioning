@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakePresetLoader">{
+  &quot;useNewFormat&quot;: true
+}</component>
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="31f62a4c-8142-495d-ad39-cb6d3e221aed" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_proc_ktimer/simple_proc.c" beforeDir="false" afterPath="$PROJECT_DIR$/simple_proc_ktimer/simple_proc.c" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
+    <option name="GROUP_DATA_SOURCES" value="true" />
+    <option name="GROUP_SCHEMA" value="true" />
+    <option name="GROUP_CONTENTS" value="false" />
+    <option name="SORT_POSITIONED" value="false" />
+    <option name="SHOW_EMPTY_GROUPS" value="false" />
+    <option name="AUTO_SCROLL_FROM_SOURCE" value="false" />
+    <option name="HIDDEN_KINDS">
+      <set />
+    </option>
+    <expand />
+    <select />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="thread_per_core_test" />
+      </map>
+    </option>
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="1S2m2bLksxnj2H72ZPg7Fnt4uG6" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+    <option name="showMembers" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;single__konkuk__threadpool&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/changyulee/Desktop/CorePartitioning_app&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;structure.view.defaults.are.configured&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RunAnythingCache">
+    <option name="myCommands">
+      <command value="find" />
+    </option>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="31f62a4c-8142-495d-ad39-cb6d3e221aed" name="Default Changelist" comment="" />
+      <created>1550299792376</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1550299792376</updated>
+      <workItem from="1550299794775" duration="20817000" />
+      <workItem from="1550564188585" duration="113497000" />
+      <workItem from="1552871886935" duration="304000" />
+      <workItem from="1552872202176" duration="23342000" />
+      <workItem from="1553242421883" duration="6051000" />
+      <workItem from="1553940159890" duration="80000" />
+      <workItem from="1553940286748" duration="20049000" />
+      <workItem from="1554163253289" duration="3272000" />
+      <workItem from="1554694592461" duration="1278000" />
+      <workItem from="1554797813022" duration="579000" />
+      <workItem from="1554798419245" duration="24007000" />
+      <workItem from="1555386318913" duration="25028000" />
+      <workItem from="1555548984953" duration="4517000" />
+      <workItem from="1555560110158" duration="10825000" />
+      <workItem from="1555746507606" duration="8042000" />
+      <workItem from="1555887210284" duration="4813000" />
+      <workItem from="1555895514064" duration="72341000" />
+      <workItem from="1556164333489" duration="8682000" />
+      <workItem from="1556275933583" duration="137000" />
+      <workItem from="1556276080043" duration="3628000" />
+      <workItem from="1556609722541" duration="4575000" />
+      <workItem from="1556691080121" duration="46000" />
+      <workItem from="1556697013755" duration="30577000" />
+      <workItem from="1556953422270" duration="76712000" />
+      <workItem from="1557489534419" duration="58892000" />
+      <workItem from="1558591093843" duration="19394000" />
+      <workItem from="1559527046120" duration="6369000" />
+      <workItem from="1559612354246" duration="19411000" />
+      <workItem from="1560416994900" duration="22000" />
+      <workItem from="1560417024998" duration="3884000" />
+      <workItem from="1560506409956" duration="133501000" />
+      <workItem from="1561284610538" duration="19038000" />
+      <workItem from="1561463924696" duration="1056000" />
+      <workItem from="1561968829039" duration="716000" />
+      <workItem from="1562092920687" duration="2999000" />
+      <workItem from="1562127642739" duration="1982000" />
+      <workItem from="1562166330807" duration="47000" />
+      <workItem from="1562177644881" duration="2605000" />
+      <workItem from="1562182226482" duration="1675000" />
+      <workItem from="1562204490317" duration="630000" />
+      <workItem from="1563503010043" duration="12497000" />
+      <workItem from="1563761041658" duration="31209000" />
+      <workItem from="1563932987458" duration="22977000" />
+      <workItem from="1564120668354" duration="16483000" />
+      <workItem from="1564297105154" duration="51683000" />
+      <workItem from="1570769861123" duration="15148000" />
+      <workItem from="1571108804295" duration="87176000" />
+      <workItem from="1574081880742" duration="358000" />
+      <workItem from="1581611102155" duration="704000" />
+      <workItem from="1584417324234" duration="60000" />
+      <workItem from="1586089448902" duration="93000" />
+      <workItem from="1593486147737" duration="3751000" />
+      <workItem from="1593739119122" duration="7766000" />
+      <workItem from="1603934812366" duration="11633000" />
+      <workItem from="1605811912526" duration="5478000" />
+      <workItem from="1611205595184" duration="11495000" />
+      <workItem from="1611836996002" duration="1236000" />
+      <workItem from="1611850983643" duration="24001000" />
+      <workItem from="1612435508097" duration="2447000" />
+      <workItem from="1662362556440" duration="17847000" />
+      <workItem from="1664178252804" duration="1349000" />
+      <workItem from="1664502917631" duration="1195000" />
+      <workItem from="1664850683921" duration="18350000" />
+      <workItem from="1666859211065" duration="3996000" />
+      <workItem from="1667374167289" duration="50621000" />
+      <workItem from="1669949002886" duration="37069000" />
+      <workItem from="1671169001900" duration="12141000" />
+      <workItem from="1672688767222" duration="8554000" />
+      <workItem from="1682968589997" duration="17513000" />
+      <workItem from="1683597401912" duration="5125000" />
+      <workItem from="1683787485266" duration="419000" />
+      <workItem from="1683787916353" duration="7753000" />
+      <workItem from="1683838802508" duration="4530000" />
+      <workItem from="1687231203910" duration="1623000" />
+      <workItem from="1687755067342" duration="808000" />
+      <workItem from="1688705481534" duration="1000" />
+      <workItem from="1689056189745" duration="5166000" />
+      <workItem from="1689575031203" duration="1448000" />
+      <workItem from="1689834368650" duration="696000" />
+      <workItem from="1689835137684" duration="5205000" />
+      <workItem from="1689898672065" duration="2029000" />
+      <workItem from="1689904617037" duration="8393000" />
+      <workItem from="1689916358470" duration="4557000" />
+      <workItem from="1715065575538" duration="7949000" />
+      <workItem from="1715317384272" duration="8013000" />
+      <workItem from="1716184928773" duration="12899000" />
+    </task>
+    <task id="LOCAL-00001" summary="fix net,io core affinity">
+      <created>1550314109511</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1550314109511</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
+    <servers />
+  </component>
+  <component name="TodoView">
+    <todo-panel id="selected-file">
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="true" />
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ORDER">
+      <list>
+        <option value="0" />
+        <option value="2" />
+        <option value="3" />
+        <option value="1" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="RECENT_FILTERS">
+      <map>
+        <entry key="Branch">
+          <value>
+            <list />
+          </value>
+        </entry>
+        <entry key="User">
+          <value>
+            <list />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="fix net,io core affinity" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix net,io core affinity" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+  <component name="debuggerHistoryManager">
+    <expressions id="breakpointLogExpression">
+      <expression>
+        <expression-string>fprintf(log_fd, &quot;[%ld] [%d] function : listen     RETURN [%d] [%lu] perror : %s\n&quot;, getMicrotime(), sockfd, getpid(), pthread_self(), strerror(errno));</expression-string>
+        <language-id>ObjectiveC</language-id>
+        <evaluation-mode>EXPRESSION</evaluation-mode>
+      </expression>
+    </expressions>
+  </component>
+  <component name="masterDetails">
+    <states>
+      <state key="ScopeChooserConfigurable.UI">
+        <settings>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+    </states>
+  </component>
+</project>
