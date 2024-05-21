@@ -2,7 +2,7 @@
  * affinity.c
  *
  *  Created on: Jan 2, 2018
- *      Author: root
+ *      Author: cgle
  */
 #include "ld_preload.h"
 
