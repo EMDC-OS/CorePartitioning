@@ -801,7 +801,7 @@ void kerneltimer_timeover(struct timer_list *arg) {
             min = sort_index_arr[NUMBER_OF_SOCKETS - i][0];
             if(core_counter[NUMBER_OF_SOCKETS - i][min] < 2) {
                 for (index_iter0 = 1; index_iter0 < 3; index_iter0++) {
-                    if (core_counter[NUMBER_OF_SOCKETS - i][sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter0]] => 2) {
+                    if (core_counter[NUMBER_OF_SOCKETS - i][sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter0]] >= 2) {
                         min = sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter0];
                         break;
                     }
