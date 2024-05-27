@@ -48,6 +48,22 @@
       </map>
     </option>
   </component>
+  <component name="GitLabMergeRequestFiltersHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPENED&quot;,
+    &quot;assignee&quot;: {
+      &quot;type&quot;: &quot;org.jetbrains.plugins.gitlab.mergerequest.ui.filters.GitLabMergeRequestsFiltersValue.MergeRequestsMemberFilterValue.MergeRequestsAssigneeFilterValue&quot;,
+      &quot;username&quot;: &quot;changyu&quot;,
+      &quot;fullname&quot;: &quot;Chan-Gyu Lee&quot;
+    }
+  }
+}</component>
+  <component name="GitLabMergeRequestsSettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;first&quot;: &quot;http://117.16.143.48/sslab/corepartitioning_app.git&quot;,
+    &quot;second&quot;: &quot;b786cb1c-0fb1-4550-b823-bae8ac646197&quot;
+  }
+}</component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
@@ -67,6 +83,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "WebServerToolWindowFactoryState": "false",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
@@ -190,7 +207,10 @@
       <workItem from="1689916358470" duration="4557000" />
       <workItem from="1715065575538" duration="7949000" />
       <workItem from="1715317384272" duration="8013000" />
-      <workItem from="1716184928773" duration="13892000" />
+      <workItem from="1716184928773" duration="15496000" />
+      <workItem from="1716438581068" duration="4267000" />
+      <workItem from="1716788362876" duration="380000" />
+      <workItem from="1716788884384" duration="661000" />
     </task>
     <task id="LOCAL-00001" summary="fix net,io core affinity">
       <created>1550314109511</created>
@@ -199,7 +219,15 @@
       <option name="project" value="LOCAL" />
       <updated>1550314109511</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="fix net,io core affinity">
+      <option name="closed" value="true" />
+      <created>1716513760560</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1716513760560</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TodoView">
