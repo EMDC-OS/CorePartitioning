@@ -17,6 +17,7 @@
   <component name="ChangeListManager">
     <list default="true" id="31f62a4c-8142-495d-ad39-cb6d3e221aed" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_proc_ktimer/simple_proc.c" beforeDir="false" afterPath="$PROJECT_DIR$/simple_proc_ktimer/simple_proc.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -210,7 +211,7 @@
       <workItem from="1716184928773" duration="15496000" />
       <workItem from="1716438581068" duration="4267000" />
       <workItem from="1716788362876" duration="380000" />
-      <workItem from="1716788884384" duration="661000" />
+      <workItem from="1716788884384" duration="15398000" />
     </task>
     <task id="LOCAL-00001" summary="fix net,io core affinity">
       <created>1550314109511</created>
@@ -280,17 +281,6 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="fix net,io core affinity" />
     <option name="LAST_COMMIT_MESSAGE" value="fix net,io core affinity" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/simple_proc_ktimer/simple_proc.c</url>
-          <line>708</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

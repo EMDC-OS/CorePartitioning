@@ -743,6 +743,7 @@ void kerneltimer_timeover(struct timer_list *arg) {
                 blk_queue_util += p_dynamic[j];
                 blk_core_counter = blk_core_counter + 1;
             }
+            core_counter[NUMBER_OF_SOCKETS - i][3] = blk_core_counter;
             blk_queue_util_avg[NUMBER_OF_SOCKETS - i] = blk_queue_util / blk_core_counter;
             util_arr[NUMBER_OF_SOCKETS - i][3] = blk_queue_util_avg[NUMBER_OF_SOCKETS - i];
             sum_avg = sum_avg + blk_queue_util_avg[NUMBER_OF_SOCKETS - i];
@@ -751,6 +752,7 @@ void kerneltimer_timeover(struct timer_list *arg) {
                 net_queue_util += p_dynamic[j];
                 net_core_counter = net_core_counter + 1;
             }
+            core_counter[NUMBER_OF_SOCKETS - i][0] = net_core_counter;
             net_queue_util_avg[NUMBER_OF_SOCKETS - i] = net_queue_util / net_core_counter;
             util_arr[NUMBER_OF_SOCKETS - i][0] = net_queue_util_avg[NUMBER_OF_SOCKETS - i];
             sum_avg = sum_avg + net_queue_util_avg[NUMBER_OF_SOCKETS - i];
@@ -759,6 +761,7 @@ void kerneltimer_timeover(struct timer_list *arg) {
                 net_sys_util += p_dynamic[j];
                 netsys_core_counter = netsys_core_counter + 1;
             }
+            core_counter[NUMBER_OF_SOCKETS - i][1] = netsys_core_counter;
             net_sys_util_avg[NUMBER_OF_SOCKETS - i] = net_sys_util / netsys_core_counter;
             util_arr[NUMBER_OF_SOCKETS - i][1] = net_sys_util_avg[NUMBER_OF_SOCKETS - i];
             sum_avg = sum_avg + net_sys_util_avg[NUMBER_OF_SOCKETS - i];
@@ -767,6 +770,7 @@ void kerneltimer_timeover(struct timer_list *arg) {
                 app_util += p_dynamic[j];
                 app_core_counter = app_core_counter + 1;
             }
+            core_counter[NUMBER_OF_SOCKETS - i][2] = app_core_counter;
             app_util_avg[NUMBER_OF_SOCKETS - i] = app_util / app_core_counter;
             util_arr[NUMBER_OF_SOCKETS - i][2] = app_util_avg[NUMBER_OF_SOCKETS - i];
             sum_avg = sum_avg + app_util_avg[NUMBER_OF_SOCKETS - i];
@@ -786,8 +790,8 @@ void kerneltimer_timeover(struct timer_list *arg) {
             // sorting the average utilization
             for(index_iter0 = 0; index_iter0 < 3; index_iter0++) {
                 for (index_iter1 = 0; index_iter1 < 3 - index_iter0; index_iter1++) {
-                    if (util_arr[NUMBER_OF_SOCKETS - i][index_iter1] >
-                        util_arr[NUMBER_OF_SOCKETS - i][index_iter1 + 1]) {
+                    if (util_arr[NUMBER_OF_SOCKETS - i][sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter1]] >
+                        util_arr[NUMBER_OF_SOCKETS - i][sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter1 +1]]) {  // when need to change,, fixed 24.05.29 to use sort_index_arr array
                         bubble_tmp = sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter1];
                         sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter1] = sort_index_arr[NUMBER_OF_SOCKETS - i][
                                 index_iter1 + 1];
