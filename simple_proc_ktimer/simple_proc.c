@@ -1356,7 +1356,7 @@ static void __exit exit_simpleproc(void)
 	remove_proc_entry("system",parent);
 	remove_proc_entry("intr",parent);
 	remove_proc_entry("total",parent);
-        remove_proc_entry("dynamic",parent);
+    remove_proc_entry("dynamic",parent);
 	remove_proc_entry(dirname,NULL);
 	
 	printk(KERN_INFO "exit simple proc\n");
