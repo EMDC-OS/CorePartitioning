@@ -812,7 +812,7 @@ void kerneltimer_timeover(struct timer_list *arg) {
                 }
             }
 
-            // finding maximum utilization group - old version
+            // finding maximum utilization group - old version need to check
             /*
             if (net_queue_util_avg[NUMBER_OF_SOCKETS - i] < net_sys_util_avg[NUMBER_OF_SOCKETS - i]) {
                 max = 1;
