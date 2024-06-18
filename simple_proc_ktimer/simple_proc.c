@@ -784,14 +784,15 @@ void kerneltimer_timeover(struct timer_list *arg) {
 
         // adjusting every NUMA socket
         for (i = 1; i <= NUMBER_OF_SOCKETS; i++) {
-            for(index_iter0 = 0; index_iter0 < 4; index_iter0++){
+            for (index_iter0 = 0; index_iter0 < 4; index_iter0++) {
                 sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter0] = index_iter0;
             }
             // sorting the average utilization
-            for(index_iter0 = 0; index_iter0 < 3; index_iter0++) {
+            for (index_iter0 = 0; index_iter0 < 3; index_iter0++) {
                 for (index_iter1 = 0; index_iter1 < 3 - index_iter0; index_iter1++) {
                     if (util_arr[NUMBER_OF_SOCKETS - i][sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter1]] >
-                        util_arr[NUMBER_OF_SOCKETS - i][sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter1 +1]]) {  // when need to change,, fixed 24.05.29 to use sort_index_arr array
+                        util_arr[NUMBER_OF_SOCKETS - i][sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter1 +
+                                                                                              1]]) {  // when need to change,, fixed 24.05.29 to use sort_index_arr array
                         bubble_tmp = sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter1];
                         sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter1] = sort_index_arr[NUMBER_OF_SOCKETS - i][
                                 index_iter1 + 1];
@@ -803,7 +804,7 @@ void kerneltimer_timeover(struct timer_list *arg) {
             // setting max, min variables
             max = sort_index_arr[NUMBER_OF_SOCKETS - i][3];
             min = sort_index_arr[NUMBER_OF_SOCKETS - i][0];
-            if(core_counter[NUMBER_OF_SOCKETS - i][min] < 2) {
+            if (core_counter[NUMBER_OF_SOCKETS - i][min] < 2) {
                 for (index_iter0 = 1; index_iter0 < 3; index_iter0++) {
                     if (core_counter[NUMBER_OF_SOCKETS - i][sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter0]] >= 2) {
                         min = sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter0];
@@ -975,48 +976,47 @@ void kerneltimer_timeover(struct timer_list *arg) {
             if (min == 4 || max == 4) {
                 blk_flag = 1;
             }
+        }
 
+        if (blk_flag != 0) {
+            k = 0;
+            i = 0;
+            for (j = 0; j < BLK_QUEUES; j++) {
+                core = blk_start_per[NUMBER_OF_SOCKETS - k - 1] + i;
 
-            if (blk_flag != 0) {
-                k = 0;
-                i = 0;
-                for (j = 0; j < BLK_QUEUES; j++) {
-                    core = blk_start_per[NUMBER_OF_SOCKETS - k - 1] + i;
+                cpumask_clear(&affinity_mask);
+                cpumask_set_cpu(core, &affinity_mask);
+                irq_set_affinity_hint(irq_blk[j], &affinity_mask);
 
-                    cpumask_clear(&affinity_mask);
-                    cpumask_set_cpu(core, &affinity_mask);
-                    irq_set_affinity_hint(irq_blk[j], &affinity_mask);
-
-                    if (blk_end_per[NUMBER_OF_SOCKETS - k - 1] == blk_start_per[NUMBER_OF_SOCKETS - k - 1] + i) {
-                        k = k + 1;
-                        k = k % socket_number;
-                        i = 0;
-                    } else {
-                        i = i + 1;
-                    }
+                if (blk_end_per[NUMBER_OF_SOCKETS - k - 1] == blk_start_per[NUMBER_OF_SOCKETS - k - 1] + i) {
+                    k = k + 1;
+                    k = k % socket_number;
+                    i = 0;
+                } else {
+                    i = i + 1;
                 }
-                blk_flag = 0;
             }
-            if (net_flag != 0) {
-                k = 0;
-                i = 0;
-                for (j = 0; j < NET_QUEUES; j++) {
-                    core = net_start_per[NUMBER_OF_SOCKETS - k - 1] + i;
+            blk_flag = 0;
+        }
+        if (net_flag != 0) {
+            k = 0;
+            i = 0;
+            for (j = 0; j < NET_QUEUES; j++) {
+                core = net_start_per[NUMBER_OF_SOCKETS - k - 1] + i;
 
-                    cpumask_clear(&affinity_mask);
-                    cpumask_set_cpu(core, &affinity_mask);
-                    irq_set_affinity_hint(irq_net[j], &affinity_mask);
+                cpumask_clear(&affinity_mask);
+                cpumask_set_cpu(core, &affinity_mask);
+                irq_set_affinity_hint(irq_net[j], &affinity_mask);
 
-                    if (net_start_per[NUMBER_OF_SOCKETS - k - 1] + i == net_end_per[NUMBER_OF_SOCKETS - k - 1]) {
-                        k = k + 1;
-                        k = k % socket_number;
-                        i = 0;
-                    } else {
-                        i = i + 1;
-                    }
+                if (net_start_per[NUMBER_OF_SOCKETS - k - 1] + i == net_end_per[NUMBER_OF_SOCKETS - k - 1]) {
+                    k = k + 1;
+                    k = k % socket_number;
+                    i = 0;
+                } else {
+                    i = i + 1;
                 }
-                net_flag = 0;
             }
+            net_flag = 0;
         }
 #endif
         kerneltimer_registertimer(pdata, TIME_STEP);
