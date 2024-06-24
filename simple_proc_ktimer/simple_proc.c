@@ -37,6 +37,10 @@
 #define NET_QUEUES      8
 #define NUMBER_OF_SOCKETS 2   // Konkuk univ server = 2
 
+#define NET_QUEUE_INDEX 0
+#define NET_SYS_INDEX 1
+#define APP_INDEX 2
+#define BLK_INDEX 3
 
 #define APP     //  select SINGLE, CROSS, PER, APP   (Core partitioning mode)
 
@@ -714,6 +718,7 @@ void kerneltimer_timeover(struct timer_list *arg) {
         socket_counter = 0;
 
         socket_number = NUMBER_OF_SOCKETS;
+
         int blk_flag = 0;
         int net_flag = 0;
         int max = 0;
@@ -743,39 +748,39 @@ void kerneltimer_timeover(struct timer_list *arg) {
                 blk_queue_util += p_dynamic[j];
                 blk_core_counter = blk_core_counter + 1;
             }
-            core_counter[NUMBER_OF_SOCKETS - i][3] = blk_core_counter;
+            core_counter[NUMBER_OF_SOCKETS - i][BLK_INDEX] = blk_core_counter;
             blk_queue_util_avg[NUMBER_OF_SOCKETS - i] = blk_queue_util / blk_core_counter;
-            util_arr[NUMBER_OF_SOCKETS - i][3] = blk_queue_util_avg[NUMBER_OF_SOCKETS - i];
+            util_arr[NUMBER_OF_SOCKETS - i][BLK_INDEX] = blk_queue_util_avg[NUMBER_OF_SOCKETS - i];
             sum_avg = sum_avg + blk_queue_util_avg[NUMBER_OF_SOCKETS - i];
 
             for (j = net_start_per[NUMBER_OF_SOCKETS - i]; j <= net_end_per[NUMBER_OF_SOCKETS - i]; j++) {
                 net_queue_util += p_dynamic[j];
                 net_core_counter = net_core_counter + 1;
             }
-            core_counter[NUMBER_OF_SOCKETS - i][0] = net_core_counter;
+            core_counter[NUMBER_OF_SOCKETS - i][NET_QUEUE_INDEX] = net_core_counter;
             net_queue_util_avg[NUMBER_OF_SOCKETS - i] = net_queue_util / net_core_counter;
-            util_arr[NUMBER_OF_SOCKETS - i][0] = net_queue_util_avg[NUMBER_OF_SOCKETS - i];
+            util_arr[NUMBER_OF_SOCKETS - i][NET_QUEUE_INDEX] = net_queue_util_avg[NUMBER_OF_SOCKETS - i];
             sum_avg = sum_avg + net_queue_util_avg[NUMBER_OF_SOCKETS - i];
 
             for (j = net_end_per[NUMBER_OF_SOCKETS - i] + 1; j < app_start_per[NUMBER_OF_SOCKETS - i]; j++) {
                 net_sys_util += p_dynamic[j];
                 netsys_core_counter = netsys_core_counter + 1;
             }
-            core_counter[NUMBER_OF_SOCKETS - i][1] = netsys_core_counter;
+            core_counter[NUMBER_OF_SOCKETS - i][NET_SYS_INDEX] = netsys_core_counter;
             net_sys_util_avg[NUMBER_OF_SOCKETS - i] = net_sys_util / netsys_core_counter;
-            util_arr[NUMBER_OF_SOCKETS - i][1] = net_sys_util_avg[NUMBER_OF_SOCKETS - i];
+            util_arr[NUMBER_OF_SOCKETS - i][NET_SYS_INDEX] = net_sys_util_avg[NUMBER_OF_SOCKETS - i];
             sum_avg = sum_avg + net_sys_util_avg[NUMBER_OF_SOCKETS - i];
 
             for (j = app_start_per[NUMBER_OF_SOCKETS - i]; j <= app_end_per[NUMBER_OF_SOCKETS - i]; j++) {
                 app_util += p_dynamic[j];
                 app_core_counter = app_core_counter + 1;
             }
-            core_counter[NUMBER_OF_SOCKETS - i][2] = app_core_counter;
+            core_counter[NUMBER_OF_SOCKETS - i][APP_INDEX] = app_core_counter;
             app_util_avg[NUMBER_OF_SOCKETS - i] = app_util / app_core_counter;
-            util_arr[NUMBER_OF_SOCKETS - i][2] = app_util_avg[NUMBER_OF_SOCKETS - i];
+            util_arr[NUMBER_OF_SOCKETS - i][APP_INDEX] = app_util_avg[NUMBER_OF_SOCKETS - i];
             sum_avg = sum_avg + app_util_avg[NUMBER_OF_SOCKETS - i];
         }
-        sum_avg = sum_avg / (socket_number * 4);
+        sum_avg = sum_avg / (NUMBER_OF_SOCKETS * 4);
 
         // indicate the max/min partitioning group
         // 0: net queue 1: net sys 2: application 3: blk
@@ -787,7 +792,7 @@ void kerneltimer_timeover(struct timer_list *arg) {
             for (index_iter0 = 0; index_iter0 < 4; index_iter0++) {
                 sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter0] = index_iter0;
             }
-            // sorting the average utilization
+            // sorting the average utilization,, ascending order
             for (index_iter0 = 0; index_iter0 < 3; index_iter0++) {
                 for (index_iter1 = 0; index_iter1 < 3 - index_iter0; index_iter1++) {
                     if (util_arr[NUMBER_OF_SOCKETS - i][sort_index_arr[NUMBER_OF_SOCKETS - i][index_iter1]] >
@@ -813,159 +818,79 @@ void kerneltimer_timeover(struct timer_list *arg) {
                 }
             }
 
-            // finding maximum utilization group - old version need to check!
-            /*
-            if (net_queue_util_avg[NUMBER_OF_SOCKETS - i] < net_sys_util_avg[NUMBER_OF_SOCKETS - i]) {
-                max = 1;
-                if (net_sys_util_avg[NUMBER_OF_SOCKETS - i] < app_util_avg[NUMBER_OF_SOCKETS - i]) {
-                    max = 2;
-                    if (app_util_avg[NUMBER_OF_SOCKETS - i] < blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        max = 3;
-                    }
-                } else {
-                    if (net_sys_util_avg[NUMBER_OF_SOCKETS - i] < blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        max = 3;
-                    }
-                }
-            } else {
-                if (net_queue_util_avg[NUMBER_OF_SOCKETS - i] < app_util_avg[NUMBER_OF_SOCKETS - i]) {
-                    max = 2;
-                    if (app_util_avg[NUMBER_OF_SOCKETS - i] < blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        max = 3;
-                    }
-                } else {
-                    if (net_queue_util_avg[NUMBER_OF_SOCKETS - i] < blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        max = 3;
-                    }
-                }
-            }
-            */
-            // finding minimum utilization group - old version, not complete
-            /*
-            if ((net_queue_util_avg[NUMBER_OF_SOCKETS - i] < net_sys_util_avg[NUMBER_OF_SOCKETS - i]) && net_core_counter > 1) {
-                if (net_queue_util_avg[NUMBER_OF_SOCKETS - i] < app_util_avg[NUMBER_OF_SOCKETS - i]) {
-                    if (net_queue_util_avg[NUMBER_OF_SOCKETS - i] < blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) {}
-                    else if (blk_core_counter > 1) { min = 3; }
-                } else {
-                    if (app_core_counter > 1) { min = 2; }
-                    if ((app_util_avg[NUMBER_OF_SOCKETS - i] > blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) &&
-                        blk_core_counter > 1) {
-                        min = 3;
-                    }
-                }
-            } else {
-                if ((net_sys_util_avg[NUMBER_OF_SOCKETS - i] < app_util_avg[NUMBER_OF_SOCKETS - i]) && netsys_core_counter > 1) {
-                    if (net_sys_util_avg[NUMBER_OF_SOCKETS - i] < blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) {}
-                    else {
-                        min = 3;
-                    }
-                } else {
-                    if ((app_util_avg[NUMBER_OF_SOCKETS - i] > blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) &&
-                        blk_core_counter > 1) {
-                        min = 3;
-                    }
-                }
-            }
-            */
-
             // if net/blk queue need to be redistributed net/blk flag is checked by under conditional statement
-            if (max == 0) {
-                if (min == 1) {
-                    if (net_queue_util_avg[NUMBER_OF_SOCKETS - i] - T_CHANGE >
-                        net_sys_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        if (netsys_core_counter > 1) {
-                            net_end_per[NUMBER_OF_SOCKETS - i]++;
-                        }
-                    } else if (min == 2) {
-                        if (net_queue_util_avg[NUMBER_OF_SOCKETS - i] - T_CHANGE >
-                            app_util_avg[NUMBER_OF_SOCKETS - i]) {
-                            if (app_core_counter > 1) {
-                                app_start_per[NUMBER_OF_SOCKETS - i]++;
-                                net_end_per[NUMBER_OF_SOCKETS - i]++;
-                            }
-                        }
-                    } else if (min == 3) {
-                        if (net_queue_util_avg[NUMBER_OF_SOCKETS - i] - T_CHANGE >
-                            blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
-                            if (blk_core_counter > 1) {
-                                blk_start_per[NUMBER_OF_SOCKETS - i]++;
-                                app_end_per[NUMBER_OF_SOCKETS - i]++;
-                                app_start_per[NUMBER_OF_SOCKETS - i]++;
-                                net_end_per[NUMBER_OF_SOCKETS - i]++;
-                            }
-                        }
+            if (max == NET_QUEUE_INDEX) {
+                t_tmp = net_queue_util_avg[NUMBER_OF_SOCKETS - i] - T_CHANGE;
+                if (min == NET_SYS_INDEX) {
+                    if (t_tmp > net_sys_util_avg[NUMBER_OF_SOCKETS - i]) {
+                        net_end_per[NUMBER_OF_SOCKETS - i]++;
+                    }
+                } else if (min == APP_INDEX) {
+                    if (t_tmp > app_util_avg[NUMBER_OF_SOCKETS - i]) {
+                        app_start_per[NUMBER_OF_SOCKETS - i]++;
+                        net_end_per[NUMBER_OF_SOCKETS - i]++;
+                    }
+                } else if (min == BLK_INDEX) {
+                    if (t_tmp > blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
+                        net_end_per[NUMBER_OF_SOCKETS - i]++;
+                        app_start_per[NUMBER_OF_SOCKETS - i]++;
+                        app_end_per[NUMBER_OF_SOCKETS - i]++;
+                        blk_start_per[NUMBER_OF_SOCKETS - i]++;
                     }
                 }
-            } else if (max == 1) {
+            } else if (max == NET_SYS_INDEX) {
                 t_tmp = net_sys_util_avg[NUMBER_OF_SOCKETS - i] - T_CHANGE;
-                if (min == 0) {
+                if (min == NET_QUEUE_INDEX) {
                     if (t_tmp > net_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        if (net_core_counter > 1) {
-                            net_end_per[NUMBER_OF_SOCKETS - i]--;
-                        }
+                        net_end_per[NUMBER_OF_SOCKETS - i]--;
                     }
-                } else if (min == 2) {
+                } else if (min == APP_INDEX) {
                     if (t_tmp > app_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        if (app_core_counter > 1) {
-                            app_start_per[NUMBER_OF_SOCKETS - i]++;
-                        }
+                        app_start_per[NUMBER_OF_SOCKETS - i]++;
                     }
-                } else if (min == 3) {
+                } else if (min == BLK_INDEX) {
                     if (t_tmp > blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        if (blk_core_counter > 1) {
-                            blk_start_per[NUMBER_OF_SOCKETS - i]++;
-                            app_end_per[NUMBER_OF_SOCKETS - i]++;
-                            app_start_per[NUMBER_OF_SOCKETS - i]++;
-                        }
+                        blk_start_per[NUMBER_OF_SOCKETS - i]++;
+                        app_end_per[NUMBER_OF_SOCKETS - i]++;
+                        app_start_per[NUMBER_OF_SOCKETS - i]++;
                     }
                 }
-            } else if (max == 2) {
+            } else if (max == APP_INDEX) {
                 t_tmp = app_util_avg[NUMBER_OF_SOCKETS - i] - T_CHANGE;
-                if (min == 0) {
+                if (min == NET_QUEUE_INDEX) {
                     if (t_tmp > net_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        if (net_core_counter > 1) {
-                            net_end_per[NUMBER_OF_SOCKETS - i]--;
-                            app_start_per[NUMBER_OF_SOCKETS - i]--;
-                        }
+                        net_end_per[NUMBER_OF_SOCKETS - i]--;
+                        app_start_per[NUMBER_OF_SOCKETS - i]--;
                     }
-                } else if (min == 1) {
+                } else if (min == NET_SYS_INDEX) {
                     if (t_tmp > net_sys_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        if (netsys_core_counter > 1) {
-                            app_start_per[NUMBER_OF_SOCKETS - i]--;
-                        }
+                        app_start_per[NUMBER_OF_SOCKETS - i]--;
                     }
-                } else if (min == 3) {
+                } else if (min == BLK_INDEX) {
                     if (t_tmp > blk_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        if (blk_core_counter > 1) {
-                            blk_start_per[NUMBER_OF_SOCKETS - i]--;
-                        }
+                        app_end_per[NUMBER_OF_SOCKETS - i]++;
+                        blk_start_per[NUMBER_OF_SOCKETS - i]++;
                     }
                 }
-            } else if (max == 3) {
+            } else if (max == BLK_INDEX) {
                 t_tmp = blk_queue_util_avg[NUMBER_OF_SOCKETS - i] - T_CHANGE;
-                if (min == 0) {
+                if (min == NET_QUEUE_INDEX) {
                     if (t_tmp > net_queue_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        if (net_core_counter > 1) {
-                            net_end_per[NUMBER_OF_SOCKETS - i]--;
-                            app_start_per[NUMBER_OF_SOCKETS - i]--;
-                            app_end_per[NUMBER_OF_SOCKETS - i]--;
-                            blk_start_per[NUMBER_OF_SOCKETS - i]--;
-                        }
+                        net_end_per[NUMBER_OF_SOCKETS - i]--;
+                        app_start_per[NUMBER_OF_SOCKETS - i]--;
+                        app_end_per[NUMBER_OF_SOCKETS - i]--;
+                        blk_start_per[NUMBER_OF_SOCKETS - i]--;
                     }
-                } else if (min == 1) {
+                } else if (min == NET_SYS_INDEX) {
                     if (t_tmp > net_sys_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        if (netsys_core_counter > 1) {
-                            app_start_per[NUMBER_OF_SOCKETS - i]--;
-                            app_end_per[NUMBER_OF_SOCKETS - i]--;
-                            blk_start_per[NUMBER_OF_SOCKETS - i]--;
-                        }
+                        app_start_per[NUMBER_OF_SOCKETS - i]--;
+                        app_end_per[NUMBER_OF_SOCKETS - i]--;
+                        blk_start_per[NUMBER_OF_SOCKETS - i]--;
                     }
-                } else if (min == 2) {
+                } else if (min == APP_INDEX) {
                     if (t_tmp > app_util_avg[NUMBER_OF_SOCKETS - i]) {
-                        if (app_core_counter > 1) {
-                            app_end_per[NUMBER_OF_SOCKETS - i]--;
-                            blk_start_per[NUMBER_OF_SOCKETS - i]--;
-                        }
+                        app_end_per[NUMBER_OF_SOCKETS - i]--;
+                        blk_start_per[NUMBER_OF_SOCKETS - i]--;
                     }
                 }
             }
