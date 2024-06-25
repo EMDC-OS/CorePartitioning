@@ -819,7 +819,10 @@ void kerneltimer_timeover(struct timer_list *arg) {
             }
 
             // if net/blk queue need to be redistributed net/blk flag is checked by under conditional statement
-            if (max == NET_QUEUE_INDEX) {
+            if(core_counter[NUMBER_OF_SOCKETS - i][min] < 2){
+                //can't change
+            }
+            else if (max == NET_QUEUE_INDEX) {
                 t_tmp = net_queue_util_avg[NUMBER_OF_SOCKETS - i] - T_CHANGE;
                 if (min == NET_SYS_INDEX) {
                     if (t_tmp > net_sys_util_avg[NUMBER_OF_SOCKETS - i]) {
