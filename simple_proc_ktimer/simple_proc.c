@@ -44,8 +44,7 @@
 
 #define APP     //  select SINGLE, CROSS, PER, APP   (Core partitioning mode)
 
-struct proc_stat
-{
+struct proc_stat {
     u64 user;
     u64 nice;
     u64 system;
@@ -110,90 +109,88 @@ int ex_blk;     //ex means number of cores not core number
 
 cpumask_t affinity_mask;
 
-module_param_array(irq_blk, int, &nr_blk_queue, 0660);
-module_param_array(irq_net, int, &nr_net_queue, 0660);
+module_param_array(irq_blk,
+int, &nr_blk_queue, 0660);
+module_param_array(irq_net,
+int, &nr_net_queue, 0660);
 /* for dynamic IRQ affinity*/
 
-static char *dirname="KU";
+static char *dirname = "KU";
 struct proc_dir_entry *parent;
 
 #ifdef arch_idle_time
 
 static cputime64_t get_idle_time(int cpu)
 {
-	cputime64_t idle;
+    cputime64_t idle;
 
-	idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
-	if (cpu_online(cpu) && !nr_iowait_cpu(cpu))
-		idle += arch_idle_time(cpu);
-	return idle;
+    idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+    if (cpu_online(cpu) && !nr_iowait_cpu(cpu))
+        idle += arch_idle_time(cpu);
+    return idle;
 }
 
 static cputime64_t get_iowait_time(int cpu)
 {
-	cputime64_t iowait;
+    cputime64_t iowait;
 
-	iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
-	if (cpu_online(cpu) && nr_iowait_cpu(cpu))
-		iowait += arch_idle_time(cpu);
-	return iowait;
+    iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+    if (cpu_online(cpu) && nr_iowait_cpu(cpu))
+        iowait += arch_idle_time(cpu);
+    return iowait;
 }
 
 #else
 
-static u64 get_idle_time(int cpu)
-{
-	u64 idle, idle_time = -1ULL;
+static u64 get_idle_time(int cpu) {
+    u64 idle, idle_time = -1ULL;
 
-	if (cpu_online(cpu))
-		idle_time = get_cpu_idle_time_us(cpu, NULL);
+    if (cpu_online(cpu))
+        idle_time = get_cpu_idle_time_us(cpu, NULL);
 
-	if (idle_time == -1ULL)
-		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
-		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
-	else
-		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+    if (idle_time == -1ULL)
+        /* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+        idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+    else
+        idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
 
-	return idle;
+    return idle;
 }
 
-static u64 get_iowait_time(int cpu)
-{
-	u64 iowait, iowait_time = -1ULL;
+static u64 get_iowait_time(int cpu) {
+    u64 iowait, iowait_time = -1ULL;
 
-	if (cpu_online(cpu))
-		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+    if (cpu_online(cpu))
+        iowait_time = get_cpu_iowait_time_us(cpu, NULL);
 
-	if (iowait_time == -1ULL)
-		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
-		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
-	else
-		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+    if (iowait_time == -1ULL)
+        /* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+        iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+    else
+        iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
 
-	return iowait;
+    return iowait;
 }
 
 #endif
 
-typedef struct
-{
-	struct timer_list timer;
-	unsigned long data;
+typedef struct {
+    struct timer_list timer;
+    unsigned long data;
 } __attribute__ ((packed)) KERNEL_TIMER_MANAGER;
 
 static KERNEL_TIMER_MANAGER *ptrmng = NULL;
 
 void kerneltimer_timeover(struct timer_list *arg);
 
-void kerneltimer_registertimer(KERNEL_TIMER_MANAGER * pdata, unsigned long timeover)
-{
-	init_timer(&(pdata->timer));
-	pdata->timer.expires = get_jiffies_64() + timeover;
-	pdata->timer.data = (unsigned long)pdata;
+void kerneltimer_registertimer(KERNEL_TIMER_MANAGER *pdata, unsigned long timeover) {
+    init_timer(&(pdata->timer));
+    pdata->timer.expires = get_jiffies_64() + timeover;
+    pdata->timer.data = (unsigned long) pdata;
 
-	pdata->timer.function = kerneltimer_timeover;
+    pdata->timer.function = kerneltimer_timeover;
 
-	add_timer(&(pdata->timer));
+    add_timer(&(pdata->timer));
 }
 
 void kerneltimer_timeover(struct timer_list *arg) {
@@ -950,52 +947,52 @@ void kerneltimer_timeover(struct timer_list *arg) {
     }
 }
 
-static int show_stat_user(struct seq_file *p, void *v)
-{
-	int i;
+static int show_stat_user(struct seq_file *p, void *v) {
+    int i;
 
-	for_each_online_cpu(i) {
-		seq_printf(p, "%d", p_user[i]);
-		seq_putc(p, '\n');
-	}
+    for_each_online_cpu(i)
+    {
+        seq_printf(p, "%d", p_user[i]);
+        seq_putc(p, '\n');
+    }
 
-	return 0;
+    return 0;
 }
 
-static int show_stat_system(struct seq_file *p, void *v)
-{
-	int i;
+static int show_stat_system(struct seq_file *p, void *v) {
+    int i;
 
-	for_each_online_cpu(i) {
-		seq_printf(p, "%d", p_system[i]);
-		seq_putc(p, '\n');
-	}
+    for_each_online_cpu(i)
+    {
+        seq_printf(p, "%d", p_system[i]);
+        seq_putc(p, '\n');
+    }
 
-	return 0;
+    return 0;
 }
 
-static int show_stat_irq(struct seq_file *p, void *v)
-{
-	int i;
+static int show_stat_irq(struct seq_file *p, void *v) {
+    int i;
 
-	for_each_online_cpu(i) {
-		seq_printf(p, "%d", p_irq[i]);
-		seq_putc(p, '\n');
-	}
+    for_each_online_cpu(i)
+    {
+        seq_printf(p, "%d", p_irq[i]);
+        seq_putc(p, '\n');
+    }
 
-	return 0;
+    return 0;
 }
 
-static int show_stat_total(struct seq_file *p, void *v)
-{
-	int i;
+static int show_stat_total(struct seq_file *p, void *v) {
+    int i;
 
-	for_each_online_cpu(i) {
-		seq_printf(p, "%d", p_total[i]);
-		seq_putc(p, '\n');
-	}
+    for_each_online_cpu(i)
+    {
+        seq_printf(p, "%d", p_total[i]);
+        seq_putc(p, '\n');
+    }
 
-	return 0;
+    return 0;
 }
 
 #ifdef SINGLE
@@ -1031,7 +1028,6 @@ static int show_stat_dynamic(struct seq_file *p, void *v)
 #endif
 
 
-
 #ifdef PER
 
 //per socket core partitioning
@@ -1053,10 +1049,10 @@ static int show_stat_dynamic(struct seq_file *p, void *v)
 #endif
 
 #ifdef APP
-static int show_stat_dynamic(struct seq_file *p, void *v)
-{
-    int i = 0 ;
-    for(i = 0 ; i < NUMBER_OF_SOCKETS ; i ++){
+
+static int show_stat_dynamic(struct seq_file *p, void *v) {
+    int i = 0;
+    for (i = 0; i < NUMBER_OF_SOCKETS; i++) {
         seq_printf(p, "%d", net_start_per[i]);
         seq_putc(p, '\n');
         seq_printf(p, "%d", net_end_per[i]);
@@ -1072,46 +1068,42 @@ static int show_stat_dynamic(struct seq_file *p, void *v)
     }
     return 0;
 }
+
 #endif
 
-static int stat_open_user(struct inode *inode, struct file *file)
-{
-	size_t size = 1024 + 128 * num_online_cpus();
+static int stat_open_user(struct inode *inode, struct file *file) {
+    size_t size = 1024 + 128 * num_online_cpus();
 
-	/* minimum size to display an interrupt count : 2 bytes */
-	size += 2 * nr_irqs;
-	return single_open_size(file, show_stat_user, NULL, size);
+    /* minimum size to display an interrupt count : 2 bytes */
+    size += 2 * nr_irqs;
+    return single_open_size(file, show_stat_user, NULL, size);
 }
 
-static int stat_open_system(struct inode *inode, struct file *file)
-{
-	size_t size = 1024 + 128 * num_online_cpus();
+static int stat_open_system(struct inode *inode, struct file *file) {
+    size_t size = 1024 + 128 * num_online_cpus();
 
-	/* minimum size to display an interrupt count : 2 bytes */
-	size += 2 * nr_irqs;
-	return single_open_size(file, show_stat_system, NULL, size);
+    /* minimum size to display an interrupt count : 2 bytes */
+    size += 2 * nr_irqs;
+    return single_open_size(file, show_stat_system, NULL, size);
 }
 
-static int stat_open_irq(struct inode *inode, struct file *file)
-{
-	size_t size = 1024 + 128 * num_online_cpus();
+static int stat_open_irq(struct inode *inode, struct file *file) {
+    size_t size = 1024 + 128 * num_online_cpus();
 
-	/* minimum size to display an interrupt count : 2 bytes */
-	size += 2 * nr_irqs;
-	return single_open_size(file, show_stat_irq, NULL, size);
+    /* minimum size to display an interrupt count : 2 bytes */
+    size += 2 * nr_irqs;
+    return single_open_size(file, show_stat_irq, NULL, size);
 }
 
-static int stat_open_total(struct inode *inode, struct file *file)
-{
-	size_t size = 1024 + 128 * num_online_cpus();
+static int stat_open_total(struct inode *inode, struct file *file) {
+    size_t size = 1024 + 128 * num_online_cpus();
 
-	/* minimum size to display an interrupt count : 2 bytes */
-	size += 2 * nr_irqs;
-	return single_open_size(file, show_stat_total, NULL, size);
+    /* minimum size to display an interrupt count : 2 bytes */
+    size += 2 * nr_irqs;
+    return single_open_size(file, show_stat_total, NULL, size);
 }
 
-static int stat_open_dynamic(struct inode *inode, struct file *file)
-{
+static int stat_open_dynamic(struct inode *inode, struct file *file) {
     size_t size = 1024 + 128 * num_online_cpus();
 
     /* minimum size to display an interrupt count : 2 bytes */
@@ -1121,43 +1113,45 @@ static int stat_open_dynamic(struct inode *inode, struct file *file)
 
 
 static const struct file_operations user_fops = {
-	.open		= stat_open_user,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
+        .open        = stat_open_user,
+        .read        = seq_read,
+        .llseek        = seq_lseek,
+        .release    = single_release,
 };
 
 static const struct file_operations system_fops = {
-	.open		= stat_open_system,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
+        .open        = stat_open_system,
+        .read        = seq_read,
+        .llseek        = seq_lseek,
+        .release    = single_release,
 };
 
 static const struct file_operations irq_fops = {
-	.open		= stat_open_irq,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
+        .open        = stat_open_irq,
+        .read        = seq_read,
+        .llseek        = seq_lseek,
+        .release    = single_release,
 };
 
 static const struct file_operations total_fops = {
-	.open		= stat_open_total,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
+        .open        = stat_open_total,
+        .read        = seq_read,
+        .llseek        = seq_lseek,
+        .release    = single_release,
 };
 
 static const struct file_operations dynamic_fops = {
-    .open		= stat_open_dynamic,
-    .read		= seq_read,
-    .llseek		= seq_lseek,
-    .release	= single_release,
+        .open        = stat_open_dynamic,
+        .read        = seq_read,
+        .llseek        = seq_lseek,
+        .release    = single_release,
 };
 
-static int __init init_simpleproc (void)
-{
-	printk(KERN_INFO "init simple proc\n");
+static int __init
+
+init_simpleproc(void) {
+    printk(KERN_INFO
+    "init simple proc\n");
 
     blk_start = 16;
     net_end = 12;
@@ -1172,7 +1166,7 @@ static int __init init_simpleproc (void)
     net_core_counter = 0;
     netsys_core_counter = 0;
 
-    #ifdef CROSS
+#ifdef CROSS
     blk_start_per[0] = 6;
     blk_end_per[0] = 9;
     blk_start_per[1] = 16;
@@ -1181,9 +1175,9 @@ static int __init init_simpleproc (void)
     net_end_per[0] = 2;
     net_start_per[1] = 10;
     net_end_per[1] = 12;
-    #endif
+#endif
 
-    #ifdef PER
+#ifdef PER
     blk_start_per[0] = 6;
     blk_end_per[0] = 9;
     blk_start_per[1] = 16;
@@ -1192,9 +1186,9 @@ static int __init init_simpleproc (void)
     net_end_per[0] = 2;
     net_start_per[1] = 10;
     net_end_per[1] = 12;
-    #endif
+#endif
 
-    #ifdef APP
+#ifdef APP
     blk_start_per[0] = 7;
     blk_end_per[0] = 9;
     blk_start_per[1] = 17;
@@ -1207,86 +1201,93 @@ static int __init init_simpleproc (void)
     app_start_per[1] = 14;
     app_end_per[0] = 8;
     app_end_per[1] = 18;
-    #endif
+#endif
 
 
-	parent = proc_mkdir(dirname, NULL);
-	if (! parent) {
-		printk(KERN_INFO "ERROR! proc_mkdir\n");
-		remove_proc_entry(dirname,NULL);
-		return -1;
-	}
-
-	if (! proc_create("user",0666,parent,&user_fops)) {
-		printk(KERN_INFO "ERROR! proc_create user\n");
-		remove_proc_entry("user",parent);
-		remove_proc_entry(dirname,NULL);
-		return -1;
-	}
-
-	if (! proc_create("system",0666,parent,&system_fops)) {
-		printk(KERN_INFO "ERROR! proc_create system\n");
-		remove_proc_entry("system",parent);
-		remove_proc_entry("user",parent);
-		remove_proc_entry(dirname,NULL);
-		return -1;
-	}
-
-	if (! proc_create("intr",0666,parent,&irq_fops)) {
-		printk(KERN_INFO "ERROR! proc_create intr\n");
-		remove_proc_entry("intr",parent);
-		remove_proc_entry("system",parent);
-		remove_proc_entry("user",parent);
-		remove_proc_entry(dirname,NULL);
-		return -1;
-	}
-	
-	if (! proc_create("total",0666,parent,&total_fops)) {
-		printk(KERN_INFO "ERROR! proc_create intr\n");
-		remove_proc_entry("total",parent);
-		remove_proc_entry("intr",parent);
-		remove_proc_entry("system",parent);
-		remove_proc_entry("user",parent);
-		remove_proc_entry(dirname,NULL);
-		return -1;
-	}
-
-    if (! proc_create("dynamic",0666,parent,&dynamic_fops)) {
-        printk(KERN_INFO "ERROR! proc_create intr\n");
-        remove_proc_entry("dynamic",parent);
-        remove_proc_entry("total",parent);
-        remove_proc_entry("intr",parent);
-        remove_proc_entry("system",parent);
-        remove_proc_entry("user",parent);
-        remove_proc_entry(dirname,NULL);
+    parent = proc_mkdir(dirname, NULL);
+    if (!parent) {
+        printk(KERN_INFO
+        "ERROR! proc_mkdir\n");
+        remove_proc_entry(dirname, NULL);
         return -1;
     }
-	ptrmng = kmalloc(sizeof(KERNEL_TIMER_MANAGER), GFP_KERNEL);
-	if (ptrmng == NULL) return - ENOMEM;
-	memset(ptrmng, 0, sizeof(KERNEL_TIMER_MANAGER));
-	ptrmng->data = 0;
+
+    if (!proc_create("user", 0666, parent, &user_fops)) {
+        printk(KERN_INFO
+        "ERROR! proc_create user\n");
+        remove_proc_entry("user", parent);
+        remove_proc_entry(dirname, NULL);
+        return -1;
+    }
+
+    if (!proc_create("system", 0666, parent, &system_fops)) {
+        printk(KERN_INFO
+        "ERROR! proc_create system\n");
+        remove_proc_entry("system", parent);
+        remove_proc_entry("user", parent);
+        remove_proc_entry(dirname, NULL);
+        return -1;
+    }
+
+    if (!proc_create("intr", 0666, parent, &irq_fops)) {
+        printk(KERN_INFO
+        "ERROR! proc_create intr\n");
+        remove_proc_entry("intr", parent);
+        remove_proc_entry("system", parent);
+        remove_proc_entry("user", parent);
+        remove_proc_entry(dirname, NULL);
+        return -1;
+    }
+
+    if (!proc_create("total", 0666, parent, &total_fops)) {
+        printk(KERN_INFO
+        "ERROR! proc_create intr\n");
+        remove_proc_entry("total", parent);
+        remove_proc_entry("intr", parent);
+        remove_proc_entry("system", parent);
+        remove_proc_entry("user", parent);
+        remove_proc_entry(dirname, NULL);
+        return -1;
+    }
+
+    if (!proc_create("dynamic", 0666, parent, &dynamic_fops)) {
+        printk(KERN_INFO
+        "ERROR! proc_create intr\n");
+        remove_proc_entry("dynamic", parent);
+        remove_proc_entry("total", parent);
+        remove_proc_entry("intr", parent);
+        remove_proc_entry("system", parent);
+        remove_proc_entry("user", parent);
+        remove_proc_entry(dirname, NULL);
+        return -1;
+    }
+    ptrmng = kmalloc(sizeof(KERNEL_TIMER_MANAGER), GFP_KERNEL);
+    if (ptrmng == NULL) return -ENOMEM;
+    memset(ptrmng, 0, sizeof(KERNEL_TIMER_MANAGER));
+    ptrmng->data = 0;
 
     kerneltimer_registertimer(ptrmng, TIME_STEP);
 
-	return 0;
+    return 0;
 }
 
-static void __exit exit_simpleproc(void)
-{
-    if (ptrmng != NULL)
-	{
-		del_timer(&(ptrmng->timer));
-		kfree(ptrmng);
-	}
-	
-	remove_proc_entry("user",parent);
-	remove_proc_entry("system",parent);
-	remove_proc_entry("intr",parent);
-	remove_proc_entry("total",parent);
-    remove_proc_entry("dynamic",parent);
-	remove_proc_entry(dirname,NULL);
-	
-	printk(KERN_INFO "exit simple proc\n");
+static void __exit
+
+exit_simpleproc(void) {
+    if (ptrmng != NULL) {
+        del_timer(&(ptrmng->timer));
+        kfree(ptrmng);
+    }
+
+    remove_proc_entry("user", parent);
+    remove_proc_entry("system", parent);
+    remove_proc_entry("intr", parent);
+    remove_proc_entry("total", parent);
+    remove_proc_entry("dynamic", parent);
+    remove_proc_entry(dirname, NULL);
+
+    printk(KERN_INFO
+    "exit simple proc\n");
 }
 
 module_init(init_simpleproc);
