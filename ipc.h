@@ -20,9 +20,12 @@
 
 
 /*functions*/
-void CPART_send_to_app(retval_data recv_data, thread_info* tmp);
-args_data CPART_recv_from_app(args_data  send_data, thread_info* tmp);
-void CPART_send_to_thread(args_data send_data, thread_info* tmp);
-void CPART_recv_from_thread(retval_data* recv_data, thread_info* tmp);
+void CPART_send_to_app(retval_data recv_data, thread_info *tmp);
+
+args_data CPART_recv_from_app(args_data send_data, thread_info *tmp);
+
+void CPART_send_to_thread(args_data send_data, thread_info *tmp);
+
+void CPART_recv_from_thread(retval_data *recv_data, thread_info *tmp);
 
 #endif

@@ -3,12 +3,12 @@
 #include <signal.h>
 
 #ifndef O_NONBLOCK
-#define O_NONBLOCK	0x0004
+#define O_NONBLOCK    0x0004
 #define O_ASYNC     0x0040
-#define F_GETFL		3	/* get file->f_flags */
-#define F_SETFL		4	/* set file->f_flags */
+#define F_GETFL        3    /* get file->f_flags */
+#define F_SETFL        4    /* set file->f_flags */
 
-#define DYNAMIC_THREAD_SYSCALLCOUNT	5
+#define DYNAMIC_THREAD_SYSCALLCOUNT    5
 
 #endif
 
@@ -16,12 +16,11 @@ static void wrap_init(void) __attribute__((constructor));     // constructor
 static void end(void) __attribute__((destructor));            // destructor
 
 
-static void wrap_init(void)
-{
-    FILE* log_fd;
+static void wrap_init(void) {
+    FILE *log_fd;
     DEBUG_SYSCALL("WRAP_INIT() : wrap_init() start\n")
 
-    if(fdtable_init() == -1){
+    if (fdtable_init() == -1) {
         perror("fdtable_init()\n");
         DEBUG_SYSCALL("WRAP_INIT() : fdtable_init() error\n")
         DEBUG_FDTABLE("WRAP_INIT() : fdtable_init() error\n")
@@ -125,55 +124,54 @@ static void end(void){
 }
 */
 
-long getMicrotime(){					// for timestamp
+long getMicrotime() {                    // for timestamp
     struct timeval currentTime;
     gettimeofday(&currentTime, NULL);
-    return currentTime.tv_sec * (int)1e6 + currentTime.tv_usec;
+    return currentTime.tv_sec * (int) 1e6 + currentTime.tv_usec;
 }
 
-void *syscall_thread()
-{
-    args_data send_data ;
-    retval_data recv_data ;
-    FILE* log_fd;
+void *syscall_thread() {
+    args_data send_data;
+    retval_data recv_data;
+    FILE *log_fd;
 
     int loop_break = 0;         // for delete -1 table - cglee
     int old_errno = 0;
     int flag;                   // for NIO->blocking IO
     thread_info *sock;          /*thread info per socket*/
-    int ret ;
+    int ret;
 
     int syscall_counter = 0; //for dynamic thread affinity
     int syscall_thread_counter = 0; // for statistic
     DEBUG_SYSTHREAD("SYSCALL_THREAD() : syscall thread created\n")
 
-    char * str;
+    char *str;
     /******************************** Allocation CPU ****************************************/
 #ifdef __ONE__
     cpu = 1;
-	CPU_ZERO(&mask);
-	CPU_SET(cpu, &mask);
-	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 #endif
 
 #ifdef __RR__
     if(ONE_NODE <= cpu)
-		cpu = 2;
-	else
-		cpu++;
-	CPU_ZERO(&mask);
-	CPU_SET(cpu, &mask);
-	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+        cpu = 2;
+    else
+        cpu++;
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 #endif
 
 #ifdef __RR2__
     if(TWO_NODE <= cpu)
-		cpu = ONE_NODE+1;
-	else
-		cpu++;
-	CPU_ZERO(&mask);
-	CPU_SET(cpu, &mask);
-	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+        cpu = ONE_NODE+1;
+    else
+        cpu++;
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 #endif
 #ifdef __DYNAMIC__
     set_cpu(1, 0);
@@ -181,9 +179,9 @@ void *syscall_thread()
 
 #ifdef __WITHIN__
     cpu = set_affinity_within(0);
-	CPU_ZERO(&mask);
-	CPU_SET(cpu, &mask);
-	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 #endif
 
 //    sem_wait(&sem_fdtable);           // disable lock - cgl //disable for rwlock
@@ -196,7 +194,7 @@ void *syscall_thread()
     DEBUG_SYSTHREAD("SYSCALL_THREAD() : got table lock, fdtable_get_by_tid() sock : %ul, self = %ul\n",sock, pthread_self())
     pthread_rwlock_unlock(&table_rwlock);
      */
-    if(sock == NULL){
+    if (sock == NULL) {
         DEBUG_SYSTHREAD("SYSCALL_THREAD() : fdtable_get_by_tid() return NULL, syscall thread exit, error\n")
 
         return NULL;
@@ -206,9 +204,9 @@ void *syscall_thread()
     set_cpu(1, sock->NetorFile);
 #endif
 //    sem_post(&sem_fdtable);           // disable lock - cgl //disable for rwlock
-    if(sock->pid == getpid()){
+    if (sock->pid == getpid()) {
 //        sem_post(&(sock->sem_thread));
-        while(send_data.request_type != TYPE_CLOSE && send_data.request_type != TYPE_SHUTDOWN){
+        while (send_data.request_type != TYPE_CLOSE && send_data.request_type != TYPE_SHUTDOWN) {
             DEBUG_SYSTHREAD("SYSCALL_THREAD() : CPART_recv_from_app\n")
             send_data = CPART_recv_from_app(send_data, sock);
             recv_data.request_type = send_data.request_type;
@@ -219,27 +217,30 @@ void *syscall_thread()
             syscall_thread_counter++;
 #endif
             /* call set_cpu() for dynamic thread affinity */
-            if(syscall_counter >= DYNAMIC_THREAD_SYSCALLCOUNT){
-                DEBUG_SYSTHREAD("SYSCALL_THREAD() : dynamic syscall affinity activated, counter = %d\n", syscall_thread_counter)
+            if (syscall_counter >= DYNAMIC_THREAD_SYSCALLCOUNT) {
+                DEBUG_SYSTHREAD("SYSCALL_THREAD() : dynamic syscall affinity activated, counter = %d\n",
+                                syscall_thread_counter)
                 syscall_counter = 0;
                 set_cpu(1, sock->NetorFile);
             }
 
-            switch(send_data.request_type){
+            switch (send_data.request_type) {
 
                 case TYPE_SOCKET:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_socket)(send_data.socket.domain, send_data.socket.type, send_data.socket.protocol);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_socket)(send_data.socket.domain, send_data.socket.type,
+                                                                send_data.socket.protocol);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
 
                 case TYPE_BIND:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_bind)(send_data.bind.socket, send_data.bind.address, send_data.bind.address_len);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_bind)(send_data.bind.socket, send_data.bind.address,
+                                                              send_data.bind.address_len);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
 
@@ -247,64 +248,78 @@ void *syscall_thread()
                     old_errno = errno;
                     errno = 0;
                     recv_data.return_value = (*original_listen)(send_data.listen.sockfd, send_data.listen.backlog);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
 
                 case TYPE_ACCEPT:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_accept)(send_data.accept.socket, send_data.accept.addr, send_data.accept.addrlen);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_accept)(send_data.accept.socket, send_data.accept.addr,
+                                                                send_data.accept.addrlen);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_CONNECT:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_connect)(send_data.connect.socket, send_data.connect.address, send_data.connect.address_len);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_connect)(send_data.connect.socket, send_data.connect.address,
+                                                                 send_data.connect.address_len);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_SEND:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_size = (*original_send)(send_data.send.socket, send_data.send.buffer, send_data.send.length, send_data.send.flags);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_size = (*original_send)(send_data.send.socket, send_data.send.buffer,
+                                                             send_data.send.length, send_data.send.flags);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_RECV:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_size = (*original_recv)(send_data.recv.socket, send_data.recv.buf, send_data.recv.length, send_data.recv.flags);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_size = (*original_recv)(send_data.recv.socket, send_data.recv.buf,
+                                                             send_data.recv.length, send_data.recv.flags);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_SETSOCKOPT:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_setsockopt)(send_data.setsockopt.socket, send_data.setsockopt.level, send_data.setsockopt.option_name, send_data.setsockopt.option_value, send_data.setsockopt.option_len);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_setsockopt)(send_data.setsockopt.socket,
+                                                                    send_data.setsockopt.level,
+                                                                    send_data.setsockopt.option_name,
+                                                                    send_data.setsockopt.option_value,
+                                                                    send_data.setsockopt.option_len);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_GETSOCKOPT:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_getsockopt)(send_data.getsockopt.socket, send_data.getsockopt.level, send_data.getsockopt.option_name, send_data.getsockopt.buf, send_data.getsockopt.addrlen);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_getsockopt)(send_data.getsockopt.socket,
+                                                                    send_data.getsockopt.level,
+                                                                    send_data.getsockopt.option_name,
+                                                                    send_data.getsockopt.buf,
+                                                                    send_data.getsockopt.addrlen);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_READ:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_size = (*original_read)(send_data.read.fildes, send_data.read.buf, send_data.read.nbyte);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_size = (*original_read)(send_data.read.fildes, send_data.read.buf,
+                                                             send_data.read.nbyte);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_WRITE:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_size = (*original_write)(send_data.write.fildes, send_data.write.buf, send_data.write.nbyte);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_size = (*original_write)(send_data.write.fildes, send_data.write.buf,
+                                                              send_data.write.nbyte);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
 
@@ -315,77 +330,93 @@ void *syscall_thread()
                     //if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     //else errno = old_errno;                         // errno not changed
 
-                    DEBUG_SYSTHREAD("SYSCALL_THREAD(close) : fd : %d  syscall_function_count : %d\n",sock->thr_fd, syscall_thread_counter)
+                    DEBUG_SYSTHREAD("SYSCALL_THREAD(close) : fd : %d  syscall_function_count : %d\n", sock->thr_fd,
+                                    syscall_thread_counter)
                     break;
 
                 case TYPE_POLL:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_poll)(send_data.poll.ufds, send_data.poll.nfds, send_data.poll.timeout);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_poll)(send_data.poll.ufds, send_data.poll.nfds,
+                                                              send_data.poll.timeout);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_PPOLL:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_ppoll)(send_data.ppoll.ufds, send_data.ppoll.nfds, send_data.ppoll.timeout_ts, send_data.ppoll.sigmask);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_ppoll)(send_data.ppoll.ufds, send_data.ppoll.nfds,
+                                                               send_data.ppoll.timeout_ts, send_data.ppoll.sigmask);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_EPOLL_WAIT:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_epoll_wait)(send_data.epoll_wait.epfd, send_data.epoll_wait.events, send_data.epoll_wait.maxevents, send_data.epoll_wait.timeout);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_epoll_wait)(send_data.epoll_wait.epfd,
+                                                                    send_data.epoll_wait.events,
+                                                                    send_data.epoll_wait.maxevents,
+                                                                    send_data.epoll_wait.timeout);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_EPOLL_CREATE:
                     old_errno = errno;
                     errno = 0;
                     recv_data.return_value = (*original_epoll_create)(send_data.epoll_create.size);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_EPOLL_CTL:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_epoll_ctl)(send_data.epoll_ctl.epfd, send_data.epoll_ctl.op, send_data.epoll_ctl.fd, send_data.epoll_ctl.events);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_epoll_ctl)(send_data.epoll_ctl.epfd, send_data.epoll_ctl.op,
+                                                                   send_data.epoll_ctl.fd, send_data.epoll_ctl.events);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_SOCKETPAIR:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_socketpair)(send_data.socketpair.domain, send_data.socketpair.type, send_data.socketpair.protocol, send_data.socketpair.sv);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_socketpair)(send_data.socketpair.domain,
+                                                                    send_data.socketpair.type,
+                                                                    send_data.socketpair.protocol,
+                                                                    send_data.socketpair.sv);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_SENDTO:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_size = (*original_sendto)(send_data.sendto.socket, send_data.sendto.buffer, send_data.sendto.length, send_data.sendto.flags, send_data.sendto.address, send_data.sendto.address_len);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_size = (*original_sendto)(send_data.sendto.socket, send_data.sendto.buffer,
+                                                               send_data.sendto.length, send_data.sendto.flags,
+                                                               send_data.sendto.address, send_data.sendto.address_len);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_RECVFROM:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_size = (*original_recvfrom)(send_data.recvfrom.socket, send_data.recvfrom.buf, send_data.recvfrom.length, send_data.recvfrom.flags, send_data.recvfrom.addr, send_data.recvfrom.addrlen);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_size = (*original_recvfrom)(send_data.recvfrom.socket, send_data.recvfrom.buf,
+                                                                 send_data.recvfrom.length, send_data.recvfrom.flags,
+                                                                 send_data.recvfrom.addr, send_data.recvfrom.addrlen);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_SENDMSG:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_size = (*original_sendmsg)(send_data.sendmsg.socket, send_data.sendmsg.msg, send_data.sendmsg.flags);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_size = (*original_sendmsg)(send_data.sendmsg.socket, send_data.sendmsg.msg,
+                                                                send_data.sendmsg.flags);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_RECVMSG:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_size = (*original_recvmsg)(send_data.recvmsg.socket, send_data.recvmsg.msg_rcv, send_data.recvmsg.flags);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_size = (*original_recvmsg)(send_data.recvmsg.socket, send_data.recvmsg.msg_rcv,
+                                                                send_data.recvmsg.flags);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_SHUTDOWN:
@@ -394,64 +425,73 @@ void *syscall_thread()
 //                    recv_data.return_size = (*original_shutdown)(send_data.shutdown.socket, send_data.shutdown.flags);
 //                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
 //                    else errno = old_errno;                         // errno not changed
-                    DEBUG_SYSTHREAD("SYSCALL_THREAD (shutdown) : fd : %d  syscall_function_count : %d\n",sock->thr_fd, syscall_thread_counter)
+                    DEBUG_SYSTHREAD("SYSCALL_THREAD (shutdown) : fd : %d  syscall_function_count : %d\n", sock->thr_fd,
+                                    syscall_thread_counter)
 
                     break;
                 case TYPE_GETSOCKNAME:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_getsockname)(send_data.getsockname.socket, send_data.getsockname.addr, send_data.getsockname.addrlen);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_getsockname)(send_data.getsockname.socket,
+                                                                     send_data.getsockname.addr,
+                                                                     send_data.getsockname.addrlen);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_GETPEERNAME:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_getpeername)(send_data.getpeername.socket, send_data.getpeername.addr, send_data.getpeername.addrlen);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_getpeername)(send_data.getpeername.socket,
+                                                                     send_data.getpeername.addr,
+                                                                     send_data.getpeername.addrlen);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_OPEN:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_open)(send_data.open.pathname, send_data.open.flags, send_data.open.mode);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_open)(send_data.open.pathname, send_data.open.flags,
+                                                              send_data.open.mode);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_OPENAT:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_openat)(send_data.openat.dirfd, send_data.openat.pathname, send_data.openat.flags, send_data.openat.mode);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_openat)(send_data.openat.dirfd, send_data.openat.pathname,
+                                                                send_data.openat.flags, send_data.openat.mode);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
-                    if(recv_data.return_value == -1) loop_break = 1;  // for break when return -1 - cglee
+                    if (recv_data.return_value == -1) loop_break = 1;  // for break when return -1 - cglee
                     break;
                 case TYPE_LSEEK:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_lseek)(send_data.lseek.fd, send_data.lseek.offset, send_data.lseek.whence);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_lseek)(send_data.lseek.fd, send_data.lseek.offset,
+                                                               send_data.lseek.whence);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_LSEEK64:
                     old_errno = errno;
                     errno = 0;
-                    recv_data.return_value = (*original_lseek64)(send_data.lseek.fd, send_data.lseek.offset, send_data.lseek.whence);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    recv_data.return_value = (*original_lseek64)(send_data.lseek.fd, send_data.lseek.offset,
+                                                                 send_data.lseek.whence);
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_STAT:
                     old_errno = errno;
                     errno = 0;
                     recv_data.return_value = (*original_stat)(send_data.stat.path, send_data.stat.buf);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 case TYPE_STAT64:
                     old_errno = errno;
                     errno = 0;
                     recv_data.return_value = (*original_stat64)(send_data.stat.path, send_data.stat.buf);
-                    if(errno != 0) recv_data.thr_errno = errno;     // set changed errno
+                    if (errno != 0) recv_data.thr_errno = errno;     // set changed errno
                     else errno = old_errno;                         // errno not changed
                     break;
                 default:
@@ -461,25 +501,24 @@ void *syscall_thread()
             CPART_send_to_app(recv_data, sock);
             DEBUG_SYSTHREAD("SYSCALL_THREAD() : CPART_send_to_app success\n")
 
-            if(loop_break == 1){        // for break when return -1 - cgl
-                DEBUG_SYSTHREAD("SYSCALL_THREAD : fd : %d  syscall_function_count : %d\n",sock->thr_fd, syscall_thread_counter)
+            if (loop_break == 1) {        // for break when return -1 - cgl
+                DEBUG_SYSTHREAD("SYSCALL_THREAD : fd : %d  syscall_function_count : %d\n", sock->thr_fd,
+                                syscall_thread_counter)
                 return NULL;
             }
         }//End of while
 
-        DEBUG_SYSTHREAD("SYSCALL_THREAD : fd : %d  syscall_function_count : %d\n",sock->thr_fd, syscall_thread_counter)
-    }
-    else{
+        DEBUG_SYSTHREAD("SYSCALL_THREAD : fd : %d  syscall_function_count : %d\n", sock->thr_fd, syscall_thread_counter)
+    } else {
 //        sem_post(&(sock->sem_thread));
-            DEBUG_SYSTHREAD("SYSCALL_THREAD : end-> there is no appropriate tid in table, error\n")
+        DEBUG_SYSTHREAD("SYSCALL_THREAD : end-> there is no appropriate tid in table, error\n")
     }
 
     return NULL;
 }
 
 
-void *ku_select()
-{
+void *ku_select() {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
     thread_info *sel; /*thread per select*/
@@ -488,29 +527,29 @@ void *ku_select()
     //-******************************** Allocation CPU ****************************************-/
 #ifdef __ONE__
     cpu = 1;
-	CPU_ZERO(&mask);
-	CPU_SET(cpu, &mask);
-	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 #endif
 
 #ifdef __RR__
     if(ONE_NODE <= cpu)
-		cpu = 1;
-	else
-		cpu++;
-	CPU_ZERO(&mask);
-	CPU_SET(cpu, &mask);
-	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+        cpu = 1;
+    else
+        cpu++;
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 #endif
 
 #ifdef __RR2__
     if(TWO_NODE <= cpu)
-		cpu = ONE_NODE+1;
-	else
-		cpu++;
-	CPU_ZERO(&mask);
-	CPU_SET(cpu, &mask);
-	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+        cpu = ONE_NODE+1;
+    else
+        cpu++;
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 #endif
 //    sem_wait(&sem_fdtable); //disable for rwlock
     pthread_rwlock_rdlock(&table_rwlock);
@@ -520,31 +559,32 @@ void *ku_select()
 #ifdef __FILEIO__
     set_cpu(1, sel->NetorFile);
 #endif
-    while(1){
+    while (1) {
         send_data = CPART_recv_from_app(send_data, sel);
         recv_data.request_type = send_data.request_type;
-        recv_data.return_value = (*original_select)(send_data.select.n, send_data.select.readfds, send_data.select.writefds, send_data.select.exceptfds, send_data.select.stimeout);
+        recv_data.return_value = (*original_select)(send_data.select.n, send_data.select.readfds,
+                                                    send_data.select.writefds, send_data.select.exceptfds,
+                                                    send_data.select.stimeout);
         CPART_send_to_app(recv_data, sel);
     }
 }
 
 
-int close(int fildes)
-{
-    thread_info* tmp;
+int close(int fildes) {
+    thread_info *tmp;
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
     int func_errno = errno;
     int delete_ret;
-    FILE* log_fd;
+    FILE *log_fd;
 
-    DEBUG_SYSCALL("CLOSE(%d) function start\n",fildes)
+    DEBUG_SYSCALL("CLOSE(%d) function start\n", fildes)
 
-    DEBUG_SYSCALL("CLOSE(%d) : TABLE_RWLOCK try rd lock\n",fildes)
+    DEBUG_SYSCALL("CLOSE(%d) : TABLE_RWLOCK try rd lock\n", fildes)
     pthread_rwlock_wrlock(&table_rwlock);
-    DEBUG_SYSCALL("CLOSE(%d) : TABLE_RWLOCK lock success\n",fildes)
+    DEBUG_SYSCALL("CLOSE(%d) : TABLE_RWLOCK lock success\n", fildes)
 
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd_all(fildes);
@@ -553,49 +593,48 @@ int close(int fildes)
 #endif
 
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("CLOSE(%d) : TABLE_RW try unlock\n",fildes)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("CLOSE(%d) : TABLE_RW try unlock\n", fildes)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("CLOSE(%d) : TABLE_RW unlock success\n",fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : TABLE_RW unlock success\n", fildes)
 
-        DEBUG_SYSCALL("CLOSE(%d) : fdtable_get_by_fd return NULL, there is no table entry with fd : %d\n", fildes, fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : fdtable_get_by_fd return NULL, there is no table entry with fd : %d\n", fildes,
+                      fildes)
         errno = func_errno;
         return (*original_close)(fildes);
-    }
-    else{           // if there is appropriate entry in FDtable
+    } else {           // if there is appropriate entry in FDtable
         DEBUG_SYSCALL("CLOSE(%d) : fdtable_get_by_fd return success\n", fildes)
         send_data.request_type = TYPE_CLOSE;
         send_data.fildes = fildes;
 
-        DEBUG_SYSCALL("CLOSE(%d) : send msg to syscall thread - try\n",fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : send msg to syscall thread - try\n", fildes)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("CLOSE(%d) : send msg to syscall thread - success\n",fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : send msg to syscall thread - success\n", fildes)
 
-        DEBUG_SYSCALL("CLOSE(%d) : recv msg from syscall thread - try\n",fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : recv msg from syscall thread - try\n", fildes)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("CLOSE(%d) : recv msg from syscall thread - success\n",fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : recv msg from syscall thread - success\n", fildes)
 
-        DEBUG_SYSCALL("CLOSE(%d) : pthread_join() - try\n",fildes)
-        pthread_join(tmp->p_thread, (void **)&status);          // do we need to wait for thread?
-        DEBUG_SYSCALL("CLOSE(%d) : pthread_join() - success\n",fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : pthread_join() - try\n", fildes)
+        pthread_join(tmp->p_thread, (void **) &status);          // do we need to wait for thread?
+        DEBUG_SYSCALL("CLOSE(%d) : pthread_join() - success\n", fildes)
 
-        DEBUG_SYSCALL("CLOSE(%d) : fdtable_delete() - try\n",fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : fdtable_delete() - try\n", fildes)
         delete_ret = fdtable_delete(fildes);
-        if(delete_ret == 0){
-            DEBUG_SYSCALL("CLOSE(%d) : fdtable_delete() - success\n",fildes)
-        }
-        else if(delete_ret == 1){
-            DEBUG_SYSCALL("CLOSE(%d) : fdtable_delete() - target's next or prev pointer is NULL, return 1 error\n",fildes)
-        }
-        else if(delete_ret == 2){
-            DEBUG_SYSCALL("CLOSE(%d) : fdtable_delete() - can't find table entry with fd, return 2 error\n",fildes)
+        if (delete_ret == 0) {
+            DEBUG_SYSCALL("CLOSE(%d) : fdtable_delete() - success\n", fildes)
+        } else if (delete_ret == 1) {
+            DEBUG_SYSCALL("CLOSE(%d) : fdtable_delete() - target's next or prev pointer is NULL, return 1 error\n",
+                          fildes)
+        } else if (delete_ret == 2) {
+            DEBUG_SYSCALL("CLOSE(%d) : fdtable_delete() - can't find table entry with fd, return 2 error\n", fildes)
         }
 
-        DEBUG_SYSCALL("CLOSE(%d) : TABLE_RWLOCK try unlock\n",fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : TABLE_RWLOCK try unlock\n", fildes)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("CLOSE(%d) : TABLE_RWLOCK unlock success\n",fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : TABLE_RWLOCK unlock success\n", fildes)
 
-        DEBUG_SYSCALL("CLOSE(%d) : return %d\n",fildes)
+        DEBUG_SYSCALL("CLOSE(%d) : return %d\n", fildes)
 
 /*
 #ifndef __POOL__
@@ -615,20 +654,19 @@ int close(int fildes)
 
 /*old*/
 
-int socket(int domain, int type, int protocol)
-{
+int socket(int domain, int type, int protocol) {
     int thr_id;
     int num = 1;
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
     thread_info *tmp;
     int ret = 0;
     int flag = 0;
     int thread_flag = 0; // if pthread_create needed then thread_flag = 1
     int func_errno = errno;
-    FILE* log_fd;
+    FILE *log_fd;
     original_socket = dlsym(RTLD_NEXT, "socket");
 
 #ifdef APP
@@ -640,22 +678,21 @@ int socket(int domain, int type, int protocol)
     ret = (*original_socket)(domain, type, protocol);
     func_errno = errno;
 
-    DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK try lock\n",ret)
+    DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK try lock\n", ret)
     pthread_rwlock_wrlock(&table_rwlock);
-    DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK lock success\n",ret)
-    if(fdtable_get_by_fd_all(ret) != NULL || ret < 0){
-        DEBUG_SYSCALL("SOCKET(%d) : FD already in table or minus descriptor\n",ret)
-        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK try unlock\n",ret)
+    DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK lock success\n", ret)
+    if (fdtable_get_by_fd_all(ret) != NULL || ret < 0) {
+        DEBUG_SYSCALL("SOCKET(%d) : FD already in table or minus descriptor\n", ret)
+        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK try unlock\n", ret)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK unlock success\n",ret)
+        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK unlock success\n", ret)
         errno = func_errno;
         return ret;
-    }
-    else if(fdtable_getnumber() < MAXTHREAD){
+    } else if (fdtable_getnumber() < MAXTHREAD) {
 #ifndef __POOL__
-        DEBUG_SYSCALL("SOCKET(%d) : try fdtable_add()\n",ret)
+        DEBUG_SYSCALL("SOCKET(%d) : try fdtable_add()\n", ret)
         tmp = fdtable_add();
-        DEBUG_SYSCALL("SOCKET(%d) : fdtable_add return = %ul\n",ret, tmp)
+        DEBUG_SYSCALL("SOCKET(%d) : fdtable_add return = %ul\n", ret, tmp)
         thread_flag = 1;
 #endif
 #ifdef __POOL__
@@ -670,11 +707,11 @@ int socket(int domain, int type, int protocol)
             }
 #endif
 
-        if(thread_flag == 1){
+        if (thread_flag == 1) {
             thr_id = pthread_create(&(tmp->p_thread), NULL, syscall_thread, NULL);
-            if(thr_id){  // if pthread_create fails
+            if (thr_id) {  // if pthread_create fails
                 perror("pthread_create() error");
-                DEBUG_FDTABLE("SOCKET(%d) : pthread_create() error\n",ret)
+                DEBUG_FDTABLE("SOCKET(%d) : pthread_create() error\n", ret)
             }
         }
 
@@ -682,15 +719,14 @@ int socket(int domain, int type, int protocol)
         tmp->pid = getpid();
         tmp->thr_fd = ret;
 
-        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK try unlock\n",ret)
+        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK try unlock\n", ret)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK unlock success\n",ret)
-    }
-    else{
-        DEBUG_SYSCALL("SOCKET(%d) : max thread exceed\n",ret)
-        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK try unlock\n",ret)
+        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK unlock success\n", ret)
+    } else {
+        DEBUG_SYSCALL("SOCKET(%d) : max thread exceed\n", ret)
+        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK try unlock\n", ret)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK unlock success\n",ret)
+        DEBUG_SYSCALL("SOCKET(%d) : TABLE_RWLOCK unlock success\n", ret)
         errno = func_errno;
         return ret;
     }
@@ -703,14 +739,14 @@ int socket(int domain, int type, int protocol)
 
 int open(const char *path, int flags, mode_t mode)
 {
-	int thr_id;
-	int num = 1;
-	thread_info *tmp;
-	int ret = 0;
-	args_data send_data = {1, 0};
-	retval_data recv_data = {1, 0, 0};
-	retval_data* recv_data_p;
-	recv_data_p = &recv_data;
+    int thr_id;
+    int num = 1;
+    thread_info *tmp;
+    int ret = 0;
+    args_data send_data = {1, 0};
+    retval_data recv_data = {1, 0, 0};
+    retval_data* recv_data_p;
+    recv_data_p = &recv_data;
     int func_errno = errno;
     int thread_flag = 0;
     FILE* log_fd;
@@ -788,17 +824,17 @@ int open(const char *path, int flags, mode_t mode)
 }
 
 off_t openat(int dirfd, const char *pathname, int flags, mode_t mode){
-	int thr_id;
-	int num = 1;
-	args_data send_data = {1, 0};
-	retval_data recv_data = {1, 0, 0};
-	retval_data* recv_data_p;
-	recv_data_p = &recv_data;
+    int thr_id;
+    int num = 1;
+    args_data send_data = {1, 0};
+    retval_data recv_data = {1, 0, 0};
+    retval_data* recv_data_p;
+    recv_data_p = &recv_data;
 
-	int ret = 0;
+    int ret = 0;
     int func_errno = errno;
     int thread_flag = 0;
-	thread_info *tmp;
+    thread_info *tmp;
     FILE* log_fd;
 
     DEBUG_SYSCALL("OPENAT() : fucntion start\n")
@@ -821,13 +857,13 @@ off_t openat(int dirfd, const char *pathname, int flags, mode_t mode){
         return ret;
     }
     else if(ret >0 && (fdtable_getnumber() < MAXTHREAD)){
-    #ifndef __POOL__
+#ifndef __POOL__
         DEBUG_SYSCALL("OPENAT(%d) : try fdtable_add()\n",ret)
         tmp = fdtable_add();
         DEBUG_SYSCALL("OPENAT(%d) : fdtable_add return = %ul\n",ret, tmp)
         thread_flag = 1;
-    #endif
-    #ifdef __POOL__
+#endif
+#ifdef __POOL__
         DEBUG_SYSCALL("OPENAT(%d) : try fdtable_from_pool()\n",ret)
         tmp = fdtable_from_pool();
         DEBUG_SYSCALL("OPENAT(%d) : fdtable_from_pool() return = %ul\n",ret, tmp)
@@ -837,7 +873,7 @@ off_t openat(int dirfd, const char *pathname, int flags, mode_t mode){
                 DEBUG_SYSCALL("OPENAT(%d) : fdtable_from_pool() return NULL, fdtable_add() return = %ul\n",ret,tmp)
                 thread_flag = 1;
             }
-    #endif
+#endif
 
 #ifdef __FILEIO__
         tmp->NetorFile = 1;
@@ -870,36 +906,36 @@ off_t openat(int dirfd, const char *pathname, int flags, mode_t mode){
 }
 
 off_t lseek(int fd, off_t offset, int whence){
-		thread_info* tmp;
-		args_data send_data = {1, 0};
-		retval_data recv_data = {1, 0, 0};
-		retval_data* recv_data_p;
-		recv_data_p = &recv_data;
-		int func_errno = errno;
+        thread_info* tmp;
+        args_data send_data = {1, 0};
+        retval_data recv_data = {1, 0, 0};
+        retval_data* recv_data_p;
+        recv_data_p = &recv_data;
+        int func_errno = errno;
         FILE* log_fd;
 
         DEBUG_SYSCALL("LSEEK(%d) : fucntion start\n",fd)
         DEBUG_SYSCALL("LSEEK(%d) : TABLE_RWLOCK try lock\n",fd)
         pthread_rwlock_rdlock(&table_rwlock);
         DEBUG_SYSCALL("LSEEK(%d) : TABLE_RWLOCK lock success\n",fd)
-		tmp = fdtable_get_by_fd(fd, 1);
+        tmp = fdtable_get_by_fd(fd, 1);
 
-		if(tmp == NULL)
-		{
+        if(tmp == NULL)
+        {
             DEBUG_SYSCALL("LSEEK(%d) : TABLE_RWLOCK try unlock\n",fd)
             pthread_rwlock_unlock(&table_rwlock);
             DEBUG_SYSCALL("LSEEK(%d) : TABLE_RWLOCK unlock success\n",fd)
 
             DEBUG_SYSCALL("LSEEK(%d) : fd not in FD table, call original system call\n",fd)
-	    	errno = func_errno;
-			return (*original_lseek)(fd, offset, whence);
-		}
-		else
-		{
-			send_data.request_type = TYPE_LSEEK;
-			send_data.lseek.fd = fd;
-			send_data.lseek.offset = offset;
-			send_data.lseek.whence = whence;
+            errno = func_errno;
+            return (*original_lseek)(fd, offset, whence);
+        }
+        else
+        {
+            send_data.request_type = TYPE_LSEEK;
+            send_data.lseek.fd = fd;
+            send_data.lseek.offset = offset;
+            send_data.lseek.whence = whence;
 
             DEBUG_SYSCALL("LSEEK(%d) : send msg to syscall thread - try\n",fd)
             CPART_send_to_thread(send_data, tmp);
@@ -913,100 +949,100 @@ off_t lseek(int fd, off_t offset, int whence){
             pthread_rwlock_unlock(&table_rwlock);
             DEBUG_SYSCALL("LSEEK(%d) : TABLE_RWLOCK unlock success\n",fd)
 
-		    if(recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
-		    else errno = func_errno;
-			return recv_data.return_value;
-		}
+            if(recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
+            else errno = func_errno;
+            return recv_data.return_value;
+        }
 }
 
 
 void *stat_syscall()
 {
-	args_data send_data = {1, 0};
-	retval_data recv_data = {1, 0, 0};
+    args_data send_data = {1, 0};
+    retval_data recv_data = {1, 0, 0};
 
-	thread_info *stat; /*thread per stat*/
+    thread_info *stat; /*thread per stat*/
 
-	//-******************************** Allocation CPU ****************************************-/
-	#ifdef __ONE__
-	cpu = 1;
-	CPU_ZERO(&mask);
-	CPU_SET(cpu, &mask);
-	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
-	#endif
-	#ifdef __RR__
-	if(ONE_NODE <= cpu)
-		cpu = 1;
-	else
-		cpu++;
-	CPU_ZERO(&mask);
-	CPU_SET(cpu, &mask);
-	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
-	#endif
+    //-******************************** Allocation CPU ****************************************-/
+#ifdef __ONE__
+    cpu = 1;
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+#endif
+#ifdef __RR__
+    if(ONE_NODE <= cpu)
+        cpu = 1;
+    else
+        cpu++;
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+#endif
 
-	#ifdef __RR2__
-	if(TWO_NODE <= cpu)
-		cpu = ONE_NODE+1;
-	else
-		cpu++;
-	CPU_ZERO(&mask);
-	CPU_SET(cpu, &mask);
-	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
-	#endif
+#ifdef __RR2__
+    if(TWO_NODE <= cpu)
+        cpu = ONE_NODE+1;
+    else
+        cpu++;
+    CPU_ZERO(&mask);
+    CPU_SET(cpu, &mask);
+    sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+#endif
 
 //	sem_wait(&sem_fdtable); //disable for rwlock
     pthread_rwlock_rdlock(&table_rwlock);
-	stat = fdtable_get_by_tid(pthread_self());
+    stat = fdtable_get_by_tid(pthread_self());
 //	sem_post(&sem_fdtable); //disable for rwlock
     pthread_rwlock_unlock(&table_rwlock);
 
-	#ifdef __FILEIO__
-		set_cpu(1, stat->NetorFile);
-	#endif
+#ifdef __FILEIO__
+        set_cpu(1, stat->NetorFile);
+#endif
 
 
-	send_data = CPART_recv_from_app(send_data, stat);
-	recv_data.request_type = send_data.request_type;
-	recv_data.return_value = (*original_stat)(send_data.stat.path, send_data.stat.buf);
-	CPART_send_to_app(recv_data, stat);
+    send_data = CPART_recv_from_app(send_data, stat);
+    recv_data.request_type = send_data.request_type;
+    recv_data.return_value = (*original_stat)(send_data.stat.path, send_data.stat.buf);
+    CPART_send_to_app(recv_data, stat);
     errno = recv_data.thr_errno;
 
-	return NULL;
+    return NULL;
 }
 
 ssize_t read(int fildes, void *buf, size_t nbyte)
 {
-	thread_info* tmp;
-	args_data send_data = {1, 0};
-	retval_data recv_data = {1, 0, 0};
-	retval_data* recv_data_p;
-	recv_data_p = &recv_data;
-	int func_errno = errno;
+    thread_info* tmp;
+    args_data send_data = {1, 0};
+    retval_data recv_data = {1, 0, 0};
+    retval_data* recv_data_p;
+    recv_data_p = &recv_data;
+    int func_errno = errno;
     FILE* log_fd;
 
     DEBUG_SYSCALL("READ(%d) : fucntion start\n",fildes)
     DEBUG_SYSCALL("READ(%d) : TABLE_RWLOCK try lock\n",fildes)
     pthread_rwlock_rdlock(&table_rwlock);
     DEBUG_SYSCALL("READ(%d) : TABLE_RWLOCK lock success\n",fildes)
-	tmp = fdtable_get_by_fd(fildes, 1);
+    tmp = fdtable_get_by_fd(fildes, 1);
 
 
-	if(tmp == NULL)
-	{
+    if(tmp == NULL)
+    {
         DEBUG_SYSCALL("READ(%d) : TABLE_RWLOCK try unlock\n",fildes)
         pthread_rwlock_unlock(&table_rwlock);
         DEBUG_SYSCALL("READ(%d) : TABLE_RWLOCK unlock success\n",fildes)
 
         DEBUG_SYSCALL("READ(%d) : fd not in FD table, call original system call\n",fildes)
-	    errno = func_errno;
-		return (*original_read)(fildes, buf, nbyte);
-	}
-	else
-	{
-		send_data.request_type = TYPE_READ;
-		send_data.read.fildes = fildes;
-		send_data.read.buf = buf;
-		send_data.read.nbyte = nbyte;
+        errno = func_errno;
+        return (*original_read)(fildes, buf, nbyte);
+    }
+    else
+    {
+        send_data.request_type = TYPE_READ;
+        send_data.read.fildes = fildes;
+        send_data.read.buf = buf;
+        send_data.read.nbyte = nbyte;
 
 
         DEBUG_SYSCALL("READ(%d) : send msg to syscall thread - try\n",fildes)
@@ -1021,45 +1057,45 @@ ssize_t read(int fildes, void *buf, size_t nbyte)
         pthread_rwlock_unlock(&table_rwlock);
         DEBUG_SYSCALL("READ(%d) : TABLE_RWLOCK unlock success\n",fildes)
 
-		if(recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
-		else errno = func_errno;
-		return recv_data.return_size;
-	}
+        if(recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
+        else errno = func_errno;
+        return recv_data.return_size;
+    }
 }
 
 ssize_t write(int fildes, const void *buf, size_t nbyte)
 {
-	thread_info* tmp;
-	args_data send_data = {1, 0};
-	retval_data recv_data = {1, 0, 0};
-	retval_data* recv_data_p;
-	recv_data_p = &recv_data;
-	int func_errno = errno;
+    thread_info* tmp;
+    args_data send_data = {1, 0};
+    retval_data recv_data = {1, 0, 0};
+    retval_data* recv_data_p;
+    recv_data_p = &recv_data;
+    int func_errno = errno;
     FILE* log_fd;
 
     DEBUG_SYSCALL("WRITE(%d) : fucntion start\n",fildes)
     DEBUG_SYSCALL("WRITE(%d) : TABLE_RWLOCK try lock\n",fildes)
     pthread_rwlock_rdlock(&table_rwlock);
     DEBUG_SYSCALL("WRITE(%d) : TABLE_RWLOCK lock success\n",fildes)
-	tmp = fdtable_get_by_fd(fildes, 1);
+    tmp = fdtable_get_by_fd(fildes, 1);
 
 
-	if(tmp == NULL)
-	{
+    if(tmp == NULL)
+    {
         DEBUG_SYSCALL("WRITE(%d) : TABLE_RWLOCK try unlock\n",fildes)
         pthread_rwlock_unlock(&table_rwlock);
         DEBUG_SYSCALL("WRITE(%d) : TABLE_RWLOCK unlock success\n",fildes)
 
         DEBUG_SYSCALL("WRITE(%d) : fd not in FD table, call original system call\n",fildes)
-	    errno = func_errno;
-		return (*original_write)(fildes, buf, nbyte);
-	}
-	else
-	{
-		send_data.request_type = TYPE_WRITE;
-		send_data.write.fildes = fildes;
-		send_data.write.buf = buf;
-		send_data.write.nbyte = nbyte;
+        errno = func_errno;
+        return (*original_write)(fildes, buf, nbyte);
+    }
+    else
+    {
+        send_data.request_type = TYPE_WRITE;
+        send_data.write.fildes = fildes;
+        send_data.write.buf = buf;
+        send_data.write.nbyte = nbyte;
 
 
         DEBUG_SYSCALL("WRITE(%d) : send msg to syscall thread - try\n",fildes)
@@ -1074,27 +1110,26 @@ ssize_t write(int fildes, const void *buf, size_t nbyte)
         pthread_rwlock_unlock(&table_rwlock);
         DEBUG_SYSCALL("WRITE(%d) : TABLE_RWLOCK unlock success\n",fildes)
 
-		errno = func_errno;
-		return recv_data.return_size;
-	}
+        errno = func_errno;
+        return recv_data.return_size;
+    }
 }
 #endif
 
 
-int bind(int socket, const struct sockaddr* address, socklen_t address_len)
-{
+int bind(int socket, const struct sockaddr *address, socklen_t address_len) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
-    thread_info* tmp ;
+    retval_data *recv_data_p;
+    thread_info *tmp;
     recv_data_p = &recv_data;
     int func_errno = errno;
-    FILE* log_fd;
+    FILE *log_fd;
 
-    DEBUG_SYSCALL("BIND(%d) : fucntion start\n",socket)
-    DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("BIND(%d) : fucntion start\n", socket)
+    DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK lock success\n", socket)
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
 #else
@@ -1102,85 +1137,81 @@ int bind(int socket, const struct sockaddr* address, socklen_t address_len)
 #endif
 
 
-
-    if(tmp == NULL){
-        DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK unlock success\n", socket)
 
-        DEBUG_SYSCALL("BIND(%d) : fd not in FD table, call original system call\n",socket)
+        DEBUG_SYSCALL("BIND(%d) : fd not in FD table, call original system call\n", socket)
         errno = func_errno;
         return (*original_bind)(socket, address, address_len);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_BIND;
         send_data.bind.socket = socket;
         send_data.bind.address = address;
         send_data.bind.address_len = address_len;
 
-        DEBUG_SYSCALL("BIND(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("BIND(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("BIND(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("BIND(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("BIND(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("BIND(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("BIND(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("BIND(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("BIND(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_value;
     }
 }
 
-int listen(int sockfd, int backlog)
-{
+int listen(int sockfd, int backlog) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
 
     recv_data_p = &recv_data;
-    FILE* log_fd;
+    FILE *log_fd;
     int func_errno = errno;
-    thread_info* tmp;
+    thread_info *tmp;
 
-    DEBUG_SYSCALL("LISTEN(%d) : function start\n",sockfd)
-    DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK try lock\n",sockfd)
+    DEBUG_SYSCALL("LISTEN(%d) : function start\n", sockfd)
+    DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK try lock\n", sockfd)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK lock success\n",sockfd)
+    DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK lock success\n", sockfd)
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(sockfd, 0);
 #else
     tmp = fdtable_get_by_fd(sockfd);
 #endif
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK try unlock\n",sockfd)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK try unlock\n", sockfd)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK unlock success\n",sockfd)
+        DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK unlock success\n", sockfd)
 
-        DEBUG_SYSCALL("LISTEN(%d) : fd not in FD table, call original system call\n",sockfd)
+        DEBUG_SYSCALL("LISTEN(%d) : fd not in FD table, call original system call\n", sockfd)
         errno = func_errno;
         return (*original_listen)(sockfd, backlog);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_LISTEN;
         send_data.listen.sockfd = sockfd;
         send_data.listen.backlog = backlog;
 
-        DEBUG_SYSCALL("LISTEN(%d) : send msg to syscall thread - try\n",sockfd)
+        DEBUG_SYSCALL("LISTEN(%d) : send msg to syscall thread - try\n", sockfd)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("LISTEN(%d) : send msg to syscall thread - success\n",sockfd)
+        DEBUG_SYSCALL("LISTEN(%d) : send msg to syscall thread - success\n", sockfd)
 
-        DEBUG_SYSCALL("LISTEN(%d) : recv msg from syscall thread - try\n",sockfd)
+        DEBUG_SYSCALL("LISTEN(%d) : recv msg from syscall thread - try\n", sockfd)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("LISTEN(%d) : recv msg from syscall thread - success\n",sockfd)
+        DEBUG_SYSCALL("LISTEN(%d) : recv msg from syscall thread - success\n", sockfd)
 
-        DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK try unlock\n",sockfd)
+        DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK try unlock\n", sockfd)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK unlock success\n",sockfd)
+        DEBUG_SYSCALL("LISTEN(%d) : TABLE_RWLOCK unlock success\n", sockfd)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_value;
@@ -1188,51 +1219,50 @@ int listen(int sockfd, int backlog)
 }
 
 
-int accept(int socket, struct sockaddr* addr, socklen_t *addrlen)
-{
+int accept(int socket, struct sockaddr *addr, socklen_t *addrlen) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p = &recv_data;
+    retval_data *recv_data_p = &recv_data;
     int thr_id;
     int num = 1;
-    thread_info* tmp;
-    thread_info* tmp2;
+    thread_info *tmp;
+    thread_info *tmp2;
     int func_errno = 0;
-    int ret=0;
-    FILE* log_fd;
+    int ret = 0;
+    FILE *log_fd;
     //int thread_flag = 0;
 
-    DEBUG_SYSCALL("ACCEPT(%d) : function start\n",socket)
-    DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("ACCEPT(%d) : function start\n", socket)
+    DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK lock success\n", socket)
     tmp = fdtable_get_by_fd(socket, 0);
 
 
-    if(tmp == NULL){        // no table for parameter socket
-        DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {        // no table for parameter socket
+        DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK unlock success\n", socket)
 
-        DEBUG_SYSCALL("ACCEPT(%d) : fd not in FD table, call original system call\n",socket)
+        DEBUG_SYSCALL("ACCEPT(%d) : fd not in FD table, call original system call\n", socket)
         errno = func_errno;
         return (*original_accept)(socket, addr, addrlen);
-    }
-    else {                   // parameter socket has fd table entry
+    } else {                   // parameter socket has fd table entry
         send_data.request_type = TYPE_ACCEPT;
         send_data.accept.socket = socket;
         send_data.accept.addr = addr;
         send_data.accept.addrlen = addrlen;
 
-        DEBUG_SYSCALL("ACCEPT(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("ACCEPT(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("ACCEPT(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("ACCEPT(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("ACCEPT(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("ACCEPT(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("ACCEPT(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("ACCEPT(%d) : recv msg from syscall thread - success\n", socket)
 
-        if (recv_data_p->return_value > 0 && fdtable_get_by_fd_all(recv_data_p->return_value) == NULL) {              // when accept() success
+        if (recv_data_p->return_value > 0 &&
+            fdtable_get_by_fd_all(recv_data_p->return_value) == NULL) {              // when accept() success
             tmp2 = fdtable_add();
 
             tmp2->NetorFile = 0;
@@ -1241,22 +1271,22 @@ int accept(int socket, struct sockaddr* addr, socklen_t *addrlen)
 
             thr_id = pthread_create(&(tmp2->p_thread), NULL, syscall_thread, NULL);
             if (thr_id < 0) {
-                DEBUG_SYSCALL("LISTEN(%d) : tmp2 thread create error\n",socket)
+                DEBUG_SYSCALL("LISTEN(%d) : tmp2 thread create error\n", socket)
                 perror("pthread_create error");
             }
-            DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK try unlock\n",socket)
+            DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK try unlock\n", socket)
             pthread_rwlock_unlock(&table_rwlock);
-            DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK unlock success\n",socket)
+            DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK unlock success\n", socket)
 
             errno = recv_data_p->thr_errno;
             return recv_data_p->return_value;
-        }
-        else {                                           // when accept() failed
-            DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK try unlock\n",socket)
+        } else {                                           // when accept() failed
+            DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK try unlock\n", socket)
             pthread_rwlock_unlock(&table_rwlock);
-            DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK unlock success\n",socket)
+            DEBUG_SYSCALL("ACCEPT(%d) : TABLE_RWLOCK unlock success\n", socket)
 
-            DEBUG_SYSCALL("ACCEPT(%d) : Accept return %d<0 or fd alread exist in table\n",socket, recv_data_p->return_value)
+            DEBUG_SYSCALL("ACCEPT(%d) : Accept return %d<0 or fd alread exist in table\n", socket,
+                          recv_data_p->return_value)
             errno = recv_data_p->thr_errno;
             return recv_data_p->return_value;
         }
@@ -1264,22 +1294,21 @@ int accept(int socket, struct sockaddr* addr, socklen_t *addrlen)
 }
 
 
-int connect(int socket, const struct sockaddr* address, socklen_t address_len)
-{
+int connect(int socket, const struct sockaddr *address, socklen_t address_len) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
-    struct sockaddr_in *sin = (struct sockaddr_in*)address;
+    retval_data *recv_data_p;
+    struct sockaddr_in *sin = (struct sockaddr_in *) address;
 
     recv_data_p = &recv_data;
     int func_errno = errno;
-    FILE* log_fd;
-    thread_info* tmp;
+    FILE *log_fd;
+    thread_info *tmp;
 
-    DEBUG_SYSCALL("CONNECT(%d) : function start\n",socket)
-    DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("CONNECT(%d) : function start\n", socket)
+    DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK lock success\n", socket)
 
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
@@ -1287,31 +1316,30 @@ int connect(int socket, const struct sockaddr* address, socklen_t address_len)
     tmp = fdtable_get_by_fd(socket);
 #endif
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = func_errno;
         return (*original_connect)(socket, address, address_len);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_CONNECT;
         send_data.connect.socket = socket;
         send_data.connect.address = address;
         send_data.connect.address_len = address_len;
 
-        DEBUG_SYSCALL("CONNECT(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("CONNECT(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("CONNECT(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("CONNECT(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("CONNECT(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("CONNECT(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("CONNECT(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("CONNECT(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("CONNECT(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_value;
@@ -1319,22 +1347,21 @@ int connect(int socket, const struct sockaddr* address, socklen_t address_len)
 }
 
 
-ssize_t send(int socket, const void* buffer, size_t length, int flags)
-{
+ssize_t send(int socket, const void *buffer, size_t length, int flags) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
 
     recv_data_p = &recv_data;
 
-    thread_info* tmp;
+    thread_info *tmp;
     int func_errno = errno;
-    FILE* log_fd;
+    FILE *log_fd;
 
-    DEBUG_SYSCALL("SEND(%d) : function start\n",socket)
-    DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("SEND(%d) : function start\n", socket)
+    DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK lock success\n", socket)
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
 #else
@@ -1342,32 +1369,31 @@ ssize_t send(int socket, const void* buffer, size_t length, int flags)
 #endif
 
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = func_errno;
         return (*original_send)(socket, buffer, length, flags);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_SEND;
         send_data.send.socket = socket;
         send_data.send.buffer = buffer;
         send_data.send.length = length;
         send_data.send.flags = flags;
 
-        DEBUG_SYSCALL("SEND(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("SEND(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("SEND(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("SEND(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("SEND(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("SEND(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("SEND(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("SEND(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("SEND(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_size;
@@ -1376,21 +1402,20 @@ ssize_t send(int socket, const void* buffer, size_t length, int flags)
 }
 
 
-ssize_t recv(int socket, void * buf, size_t length, int flags)
-{
+ssize_t recv(int socket, void *buf, size_t length, int flags) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
 
     recv_data_p = &recv_data;
     int func_errno = errno;
-    FILE* log_fd;
-    thread_info* tmp;
+    FILE *log_fd;
+    thread_info *tmp;
 
-    DEBUG_SYSCALL("RECV(%d) : function start\n",socket)
-    DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("RECV(%d) : function start\n", socket)
+    DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK lock success\n", socket)
 
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
@@ -1398,52 +1423,50 @@ ssize_t recv(int socket, void * buf, size_t length, int flags)
     tmp = fdtable_get_by_fd(socket);
 #endif
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = func_errno;
         return (*original_recv)(socket, buf, length, flags);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_RECV;
         send_data.recv.socket = socket;
         send_data.recv.buf = buf;
         send_data.recv.length = length;
         send_data.recv.flags = flags;
 
-        DEBUG_SYSCALL("RECV(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("RECV(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("RECV(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("RECV(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("RECV(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("RECV(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("RECV(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("RECV(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("RECV(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_size;
     }
 }
 
-int setsockopt(int socket, int level, int option_name, const void* option_value, socklen_t option_len)
-{
+int setsockopt(int socket, int level, int option_name, const void *option_value, socklen_t option_len) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     int func_errno = errno;
     recv_data_p = &recv_data;
-    thread_info* tmp;
-    FILE* log_fd;
+    thread_info *tmp;
+    FILE *log_fd;
 
-    DEBUG_SYSCALL("SETSOCKOPT(%d) : function start\n",socket)
-    DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("SETSOCKOPT(%d) : function start\n", socket)
+    DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK lock success\n", socket)
 
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
@@ -1451,15 +1474,14 @@ int setsockopt(int socket, int level, int option_name, const void* option_value,
     tmp = fdtable_get_by_fd(socket);
 #endif
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = func_errno;
         return (*original_setsockopt)(socket, level, option_name, option_value, option_len);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_SETSOCKOPT;
         send_data.setsockopt.socket = socket;
         send_data.setsockopt.level = level;
@@ -1467,37 +1489,37 @@ int setsockopt(int socket, int level, int option_name, const void* option_value,
         send_data.setsockopt.option_value = option_value;
         send_data.setsockopt.option_len = option_len;
 
-        DEBUG_SYSCALL("SETSOCKOPT(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("SETSOCKOPT(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("SETSOCKOPT(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("SETSOCKOPT(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("SETSOCKOPT(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("SETSOCKOPT(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("SETSOCKOPT(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("SETSOCKOPT(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("SETSOCKOPT(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_value;
     }
 }
-int getsockopt(int socket, int level, int option_name, void* buf, socklen_t *addrlen)
-{
+
+int getsockopt(int socket, int level, int option_name, void *buf, socklen_t *addrlen) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
-    thread_info* tmp;
+    retval_data *recv_data_p;
+    thread_info *tmp;
     recv_data_p = &recv_data;
 
     int func_errno = errno;
-    FILE* log_fd;
+    FILE *log_fd;
 
-    DEBUG_SYSCALL("GETSOCKOPT(%d) : function start\n",socket)
-    DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("GETSOCKOPT(%d) : function start\n", socket)
+    DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK lock success\n", socket)
 
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
@@ -1505,15 +1527,14 @@ int getsockopt(int socket, int level, int option_name, void* buf, socklen_t *add
     tmp = fdtable_get_by_fd(socket);
 #endif
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = func_errno;
-        return (*original_getsockopt)(socket, level, option_name, buf,addrlen);
-    }
-    else{
+        return (*original_getsockopt)(socket, level, option_name, buf, addrlen);
+    } else {
 
         send_data.request_type = TYPE_GETSOCKOPT;
         send_data.getsockopt.socket = socket;
@@ -1523,17 +1544,17 @@ int getsockopt(int socket, int level, int option_name, void* buf, socklen_t *add
         send_data.getsockopt.addrlen = addrlen;
 
 
-        DEBUG_SYSCALL("GETSOCKOPT(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("GETSOCKOPT(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("GETSOCKOPT(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("GETSOCKOPT(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("GETSOCKOPT(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("GETSOCKOPT(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("GETSOCKOPT(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("GETSOCKOPT(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("GETSOCKOPT(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_value;
@@ -1541,45 +1562,42 @@ int getsockopt(int socket, int level, int option_name, void* buf, socklen_t *add
 }
 
 
-int epoll_create(int size){
+int epoll_create(int size) {
     int thr_id;
     int num = 1;
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
     int ret;
     int func_errno = errno;
     thread_info *tmp;
     int thread_flag = 0;
-    FILE* log_fd;
+    FILE *log_fd;
     errno = 0;
 
-    DEBUG_SYSCALL("EPOLL_CREATE(%d) : function start\n",socket)
+    DEBUG_SYSCALL("EPOLL_CREATE(%d) : function start\n", socket)
     ret = (*original_epoll_create)(size);
-    if(errno != 0){
+    if (errno != 0) {
         func_errno = errno;
-    }
-    else{
+    } else {
         errno = func_errno;
     }
-    DEBUG_SYSCALL("EPOLL_CREATE(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("EPOLL_CREATE(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("EPOLL_CREATE(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("EPOLL_CREATE(%d) : TABLE_RWLOCK lock success\n", socket)
 
-    if( fdtable_get_by_fd_all(ret) != NULL || ret < 0){
-        DEBUG_SYSCALL("EPOLL_CREATE(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (fdtable_get_by_fd_all(ret) != NULL || ret < 0) {
+        DEBUG_SYSCALL("EPOLL_CREATE(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_rdlock(&table_rwlock);
-        DEBUG_SYSCALL("EPOLL_CREATE(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("EPOLL_CREATE(%d) : TABLE_RWLOCK unlock success\n", socket)
         errno = func_errno;
         return ret;
-    }
-
-    else if(fdtable_getnumber() < MAXTHREAD){
+    } else if (fdtable_getnumber() < MAXTHREAD) {
 #ifndef __POOL__
         DEBUG_SYSCALL("EPOLL_CREATE() : try fdtable_add()\n")
         tmp = fdtable_add();
-        DEBUG_SYSCALL("EPOLL_CREATE() : fdtable_add return = %ul\n",tmp)
+        DEBUG_SYSCALL("EPOLL_CREATE() : fdtable_add return = %ul\n", tmp)
         thread_flag = 1;
 #endif
 #ifdef __POOL__
@@ -1593,26 +1611,25 @@ int epoll_create(int size){
             thread_flag = 1;
         }
 #endif
-        tmp->pid=getpid();
+        tmp->pid = getpid();
         tmp->NetorFile = 0;
         tmp->thr_fd = ret;
-        if(thread_flag == 1){
+        if (thread_flag == 1) {
             thr_id = pthread_create(&(tmp->p_thread), NULL, syscall_thread, NULL);
-            if(thr_id){  // if pthread_create fails
-                DEBUG_SYSCALL("EPOLL_CREATE() : pthread_create() error\n",ret)
+            if (thr_id) {  // if pthread_create fails
+                DEBUG_SYSCALL("EPOLL_CREATE() : pthread_create() error\n", ret)
                 perror("pthread_create error");
             }
         }
 
-        if(thr_id < 0){
+        if (thr_id < 0) {
             DEBUG_SYSCALL("EPOLL_CREATE() : pthread_create() error\n")
             perror("pthread_create error");
         }
         DEBUG_SYSCALL("EPOLL_CREATE() : TABLE_RWLOCK try unlock\n")
         pthread_rwlock_unlock(&table_rwlock);
         DEBUG_SYSCALL("EPOLL_CREATE() : TABLE_RWLOCK unlock success\n")
-    }
-    else{
+    } else {
         DEBUG_SYSCALL("EPOLL_CREATE() : TABLE_RWLOCK try unlock\n")
         pthread_rwlock_unlock(&table_rwlock);
         DEBUG_SYSCALL("EPOLL_CREATE() : TABLE_RWLOCK unlock success\n")
@@ -1625,20 +1642,20 @@ int epoll_create(int size){
 }
 
 
-int epoll_ctl(int epfd, int op, int fd, struct epoll_event *events){
+int epoll_ctl(int epfd, int op, int fd, struct epoll_event *events) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
 
-    thread_info* tmp;
+    thread_info *tmp;
     int func_errno = errno;
-    FILE* log_fd;
+    FILE *log_fd;
 
-    DEBUG_SYSCALL("EPOLL_CTL(%d) : function start\n",epfd)
-    DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK try lock\n",epfd)
+    DEBUG_SYSCALL("EPOLL_CTL(%d) : function start\n", epfd)
+    DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK try lock\n", epfd)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK lock success\n",epfd)
+    DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK lock success\n", epfd)
 
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(epfd, 0);
@@ -1646,17 +1663,14 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *events){
     tmp = fdtable_get_by_fd(epfd);
 #endif
 
-    if(tmp == NULL)
-    {
-        DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK try unlock\n",epfd)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK try unlock\n", epfd)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK unlock success\n",epfd)
+        DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK unlock success\n", epfd)
 
         errno = func_errno;
         return (*original_epoll_ctl)(epfd, op, fd, events);
-    }
-    else
-    {
+    } else {
         send_data.request_type = TYPE_EPOLL_CTL;
         send_data.epoll_ctl.epfd = epfd;
         send_data.epoll_ctl.op = op;
@@ -1666,21 +1680,21 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *events){
         CPART_send_to_thread(send_data, tmp);
         CPART_recv_from_thread(recv_data_p, tmp);
 
-        DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK try unlock\n",epfd)
+        DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK try unlock\n", epfd)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK unlock success\n",epfd)
+        DEBUG_SYSCALL("EPOLL_CTL(%d) : TABLE_RWLOCK unlock success\n", epfd)
 
-        if(recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
+        if (recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
         else errno = func_errno;
         return recv_data.return_value;
     }
 }
-int poll(pollfd *ufds, unsigned int nfds, int timeout)
-{
+
+int poll(pollfd *ufds, unsigned int nfds, int timeout) {
     int (*original_poll)(pollfd *ufds, unsigned int nfds, int timeout);
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
 
     recv_data_p = &recv_data;
 
@@ -1691,25 +1705,22 @@ int poll(pollfd *ufds, unsigned int nfds, int timeout)
     fclose(log_fd);
 #endif
     original_poll = dlsym(RTLD_NEXT, "poll");
-    thread_info* tmp;
+    thread_info *tmp;
     int func_errno = errno;
 //    sem_wait(&sem_fdtable); //disable for rwlock
     pthread_rwlock_rdlock(&table_rwlock);
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(ufds[nfds-1].fd, 0);
 #else
-    tmp = fdtable_get_by_fd(ufds[nfds-1].fd);
+    tmp = fdtable_get_by_fd(ufds[nfds - 1].fd);
 #endif
 //    sem_post(&sem_fdtable); //disable for rwlock
 
-    if(tmp == NULL)
-    {
+    if (tmp == NULL) {
         pthread_rwlock_unlock(&table_rwlock);
         errno = func_errno;
         return (*original_poll)(ufds, nfds, timeout);
-    }
-    else
-    {
+    } else {
         send_data.request_type = TYPE_POLL;
         send_data.poll.ufds = ufds;
         send_data.poll.nfds = nfds;
@@ -1720,28 +1731,28 @@ int poll(pollfd *ufds, unsigned int nfds, int timeout)
 
         pthread_rwlock_unlock(&table_rwlock);
 
-        if(recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
+        if (recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
         else errno = func_errno;
         return recv_data.return_value;
     }
 }
 
 
-ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr *address, socklen_t address_len)
-{
+ssize_t sendto(int socket, const void *buffer, size_t length, int flags, const struct sockaddr *address,
+               socklen_t address_len) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
 
     int func_errno = errno;
-    thread_info* tmp;
-    FILE* log_fd;
+    thread_info *tmp;
+    FILE *log_fd;
 
-    DEBUG_SYSCALL("SENDTO(%d) : function start\n",socket)
-    DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("SENDTO(%d) : function start\n", socket)
+    DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK lock success\n", socket)
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
 #else
@@ -1749,15 +1760,14 @@ ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const s
 #endif
 
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = func_errno;
         return (*original_sendto)(socket, buffer, length, flags, address, address_len);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_SENDTO;
         send_data.sendto.socket = socket;
         send_data.sendto.buffer = buffer;
@@ -1767,104 +1777,100 @@ ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const s
         send_data.sendto.address_len = address_len;
 
 
-        DEBUG_SYSCALL("SENDTO(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("SENDTO(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("SENDTO(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("SENDTO(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("SENDTO(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("SENDTO(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("SENDTO(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("SENDTO(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("SENDTO(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_size;
     }
 }
 
-ssize_t sendmsg(int socket, const struct msghdr *msg, int flags)
-{
+ssize_t sendmsg(int socket, const struct msghdr *msg, int flags) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
-    FILE* log_fd;
+    FILE *log_fd;
     int func_errno = errno;
-    thread_info* tmp;
+    thread_info *tmp;
 
-    DEBUG_SYSCALL("SENDMSG(%d) : function start\n",socket)
-    DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("SENDMSG(%d) : function start\n", socket)
+    DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK lock success\n", socket)
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
 #else
     tmp = fdtable_get_by_fd(socket);
 #endif
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = 0;
         return (*original_sendmsg)(socket, msg, flags);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_SENDMSG;
         send_data.sendmsg.socket = socket;
         send_data.sendmsg.msg = msg;
         send_data.sendmsg.flags = flags;
 
 
-        DEBUG_SYSCALL("SENDMSG(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("SENDMSG(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("SENDMSG(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("SENDMSG(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("SENDMSG(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("SENDMSG(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("SENDMSG(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("SENDMSG(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("SENDMSG(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_size;
     }
 }
 
-ssize_t recvfrom(int socket, void * buf, size_t length, int flags, struct sockaddr *addr, socklen_t *addrlen)
-{
+ssize_t recvfrom(int socket, void *buf, size_t length, int flags, struct sockaddr *addr, socklen_t *addrlen) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
     int func_errno = errno;
-    thread_info* tmp;
-    FILE* log_fd;
+    thread_info *tmp;
+    FILE *log_fd;
 
-    DEBUG_SYSCALL("RECVFROM(%d) : function start\n",socket)
-    DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("RECVFROM(%d) : function start\n", socket)
+    DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK lock success\n", socket)
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
 #else
     tmp = fdtable_get_by_fd(socket);
 #endif
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = func_errno;
         return (*original_recvfrom)(socket, buf, length, flags, addr, addrlen);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_RECVFROM;
         send_data.recvfrom.socket = socket;
         send_data.recvfrom.buf = buf;
@@ -1873,197 +1879,189 @@ ssize_t recvfrom(int socket, void * buf, size_t length, int flags, struct sockad
         send_data.recvfrom.addr = addr;
         send_data.recvfrom.addrlen = addrlen;
 
-        DEBUG_SYSCALL("RECVFROM(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("RECVFROM(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("RECVFROM(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("RECVFROM(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("RECVFROM(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("RECVFROM(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("RECVFROM(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("RECVFROM(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("RECVFROM(%d) : TABLE_RWLOCK unlock success\n", socket)
 
-        if(recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
+        if (recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
         else errno = func_errno;
         return recv_data.return_size;
     }
 }
 
-ssize_t recvmsg(int socket, struct msghdr *msg_rcv, int flags)
-{
+ssize_t recvmsg(int socket, struct msghdr *msg_rcv, int flags) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
-    FILE* log_fd;
+    FILE *log_fd;
     thread_info *tmp;
     int func_errno = errno;
 
-    DEBUG_SYSCALL("RECVMSG(%d) : function start\n",socket)
-    DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("RECVMSG(%d) : function start\n", socket)
+    DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK lock success\n", socket)
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
 #else
     tmp = fdtable_get_by_fd(socket);
 #endif
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = func_errno;
         return (*original_recvmsg)(socket, msg_rcv, flags);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_RECVMSG;
         send_data.recvmsg.socket = socket;
         send_data.recvmsg.msg_rcv = msg_rcv;
         send_data.recvmsg.flags = flags;
 
-        DEBUG_SYSCALL("RECVMSG(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("RECVMSG(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("RECVMSG(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("RECVMSG(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("RECVMSG(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("RECVMSG(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("RECVMSG(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("RECVMSG(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("RECVMSG(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_size;
     }
 }
 
-int getsockname(int socket, struct sockaddr *addr, socklen_t *addrlen)
-{
+int getsockname(int socket, struct sockaddr *addr, socklen_t *addrlen) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
-    FILE* log_fd;
-    thread_info* tmp ;
+    FILE *log_fd;
+    thread_info *tmp;
 
     int func_errno = errno;
 
-    DEBUG_SYSCALL("GETSOCKNAME(%d) : function start\n",socket)
-    DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("GETSOCKNAME(%d) : function start\n", socket)
+    DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK lock success\n", socket)
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
 #else
     tmp = fdtable_get_by_fd(socket);
 #endif
 
-    if(tmp == NULL)
-    {
-        DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = func_errno;
         return (*original_getsockname)(socket, addr, addrlen);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_GETSOCKNAME;
         send_data.getsockname.socket = socket;
         send_data.getsockname.addr = addr;
         send_data.getsockname.addrlen = addrlen;
 
-        DEBUG_SYSCALL("GETSOCKNAME(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("GETSOCKNAME(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("GETSOCKNAME(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("GETSOCKNAME(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("GETSOCKNAME(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("GETSOCKNAME(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("GETSOCKNAME(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("GETSOCKNAME(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("GETSOCKNAME(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         errno = recv_data_p->thr_errno;
         return recv_data.return_value;
     }
 }
 
-int getpeername(int socket, struct sockaddr *addr, socklen_t *addrlen)
-{
+int getpeername(int socket, struct sockaddr *addr, socklen_t *addrlen) {
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
-    thread_info* tmp;
-    FILE* log_fd;
+    thread_info *tmp;
+    FILE *log_fd;
 
     int func_errno = errno;
 
-    DEBUG_SYSCALL("GETPEERNAME(%d) : function start\n",socket)
-    DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK try lock\n",socket)
+    DEBUG_SYSCALL("GETPEERNAME(%d) : function start\n", socket)
+    DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK try lock\n", socket)
     pthread_rwlock_rdlock(&table_rwlock);
-    DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK lock success\n", socket)
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd(socket, 0);
 #else
     tmp = fdtable_get_by_fd(socket);
 #endif
 
-    if(tmp == NULL){
-        DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK try unlock\n",socket)
+    if (tmp == NULL) {
+        DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK unlock success\n", socket)
 
         return (*original_getpeername)(socket, addr, addrlen);
-    }
-    else{
+    } else {
         send_data.request_type = TYPE_GETPEERNAME;
         send_data.getpeername.socket = socket;
         send_data.getpeername.addr = addr;
         send_data.getpeername.addrlen = addrlen;
 
 
-        DEBUG_SYSCALL("GETPEERNAME(%d) : send msg to syscall thread - try\n",socket)
+        DEBUG_SYSCALL("GETPEERNAME(%d) : send msg to syscall thread - try\n", socket)
         CPART_send_to_thread(send_data, tmp);
-        DEBUG_SYSCALL("GETPEERNAME(%d) : send msg to syscall thread - success\n",socket)
+        DEBUG_SYSCALL("GETPEERNAME(%d) : send msg to syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("GETPEERNAME(%d) : recv msg from syscall thread - try\n",socket)
+        DEBUG_SYSCALL("GETPEERNAME(%d) : recv msg from syscall thread - try\n", socket)
         CPART_recv_from_thread(recv_data_p, tmp);
-        DEBUG_SYSCALL("GETPEERNAME(%d) : recv msg from syscall thread - success\n",socket)
+        DEBUG_SYSCALL("GETPEERNAME(%d) : recv msg from syscall thread - success\n", socket)
 
-        DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK try unlock\n",socket)
+        DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK try unlock\n", socket)
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK unlock success\n",socket)
+        DEBUG_SYSCALL("GETPEERNAME(%d) : TABLE_RWLOCK unlock success\n", socket)
 
-        if(recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
+        if (recv_data_p->thr_errno != 0) errno = recv_data_p->thr_errno;
         else errno = func_errno;
         return recv_data.return_value;
     }
 }
 
 
-int shutdown(int socket, int flags)
-{
-    thread_info* tmp;
+int shutdown(int socket, int flags) {
+    thread_info *tmp;
     args_data send_data = {1, 0};
     retval_data recv_data = {1, 0, 0};
-    retval_data* recv_data_p;
+    retval_data *recv_data_p;
     recv_data_p = &recv_data;
     int func_errno = errno;
-    FILE* log_fd;
+    FILE *log_fd;
 
-    DEBUG_SYSCALL("SHUTDOWN(%d) function start\n",socket)
+    DEBUG_SYSCALL("SHUTDOWN(%d) function start\n", socket)
 
-    DEBUG_SYSCALL("SHUTDOWN(%d) : TABLE_RWLOCK try rd lock\n",socket)
+    DEBUG_SYSCALL("SHUTDOWN(%d) : TABLE_RWLOCK try rd lock\n", socket)
     pthread_rwlock_wrlock(&table_rwlock);
-    DEBUG_SYSCALL("SHUTDOWN(%d) : TABLE_RWLOCK lock success\n",socket)
+    DEBUG_SYSCALL("SHUTDOWN(%d) : TABLE_RWLOCK lock success\n", socket)
 #ifdef __FILEIO__
     tmp = fdtable_get_by_fd_all(socket);
 #else
@@ -2071,21 +2069,21 @@ int shutdown(int socket, int flags)
 #endif
 
 
-    if(tmp == NULL){
+    if (tmp == NULL) {
         pthread_rwlock_unlock(&table_rwlock);
-        DEBUG_SYSCALL("SHUTDOWN(%d) : fdtable_get_by_fd return NULL, there is no table entry with fd : %d\n", socket, socket)
+        DEBUG_SYSCALL("SHUTDOWN(%d) : fdtable_get_by_fd return NULL, there is no table entry with fd : %d\n", socket,
+                      socket)
         return (*original_shutdown)(socket, flags);
-    }
-    else{           // if there is appropriate entry in FDtable
+    } else {           // if there is appropriate entry in FDtable
         DEBUG_SYSCALL("SHUTDOWN(%d) : fdtable_get_by_fd return success\n", socket)
         send_data.request_type = TYPE_SHUTDOWN;
         send_data.send.socket = socket;
-        send_data.send.flags= flags;
+        send_data.send.flags = flags;
 
         CPART_send_to_thread(send_data, tmp);
         CPART_recv_from_thread(recv_data_p, tmp);
 
-        pthread_join(tmp->p_thread, (void **)&status);          // do we need to wait for thread?
+        pthread_join(tmp->p_thread, (void **) &status);          // do we need to wait for thread?
 
 #ifndef __POOL__
         fdtable_delete(socket);
@@ -2100,20 +2098,17 @@ int shutdown(int socket, int flags)
 }
 
 
-
-
-int clone(int (*fn)(void *arg), void *child_stack, int flags, void* arg, ...)
-{
+int clone(int (*fn)(void *arg), void *child_stack, int flags, void *arg, ...) {
     int return_pid_t;
-    int (*original_clone)(int (*fn)(void *arg), void* child_stack, int flags, void* arg);
-    FILE* log_fd;
+    int (*original_clone)(int (*fn)(void *arg), void *child_stack, int flags, void *arg);
+    FILE *log_fd;
 
     DEBUG_SYSCALL("CLONE() function start")
     original_clone = dlsym(RTLD_NEXT, "clone");
 
     return_pid_t = (*original_clone)(fn, child_stack, flags, arg);
 
-    switch(return_pid_t){
+    switch (return_pid_t) {
         case 0:
             //pthread_rwlock_init(&table_rwlock, NULL);
             //fdtable_init();
@@ -2131,15 +2126,14 @@ int clone(int (*fn)(void *arg), void *child_stack, int flags, void* arg, ...)
 }
 
 
-pid_t fork()
-{
+pid_t fork() {
     pid_t return_pid_t;
-    FILE* log_fd;
+    FILE *log_fd;
 
     DEBUG_SYSCALL("FORK() function start")
     return_pid_t = (*original_fork)();
 
-    switch(return_pid_t){
+    switch (return_pid_t) {
         case 0:
 //            pthread_rwlock_init(&table_rwlock, NULL);
 //            fdtable_init();

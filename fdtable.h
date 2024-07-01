@@ -25,35 +25,51 @@
 /**/
 
 int fdtable_init();
+
 void fdtable_destroy();
-thread_info* fdtable_add();
+
+thread_info *fdtable_add();
+
 int fdtable_delete(int fd);
+
 int fdtable_entry_delete(int fd);
 
 int fdtable_init_pool();
+
 void fdtable_destroy_pool();
-thread_info* fdtable_add_pool();
+
+thread_info *fdtable_add_pool();
+
 int fdtable_delete_pool(int fd);
+
 int fdtable_entry_delete_pool(int fd);
 
-thread_info* fdtable_to_pool(int fd);
-thread_info* fdtable_from_pool();
+thread_info *fdtable_to_pool(int fd);
+
+thread_info *fdtable_from_pool();
 
 
 //thread_info* fdtable_traversal(thread_info* head);
 
-thread_info* fdtable_get_by_fd_all(int fd);
+thread_info *fdtable_get_by_fd_all(int fd);
+
 #ifdef __FILEIO__
-	thread_info* fdtable_get_by_fd(int fd, boolean NetorFile);
+thread_info* fdtable_get_by_fd(int fd, boolean NetorFile);
 #else
-thread_info* fdtable_get_by_fd(int fd);
+
+thread_info *fdtable_get_by_fd(int fd);
 
 #endif
-thread_info* fdtable_get_by_tid(pthread_t pthread);
-void fdtable_forked(void* function, void* function2); /*called when process forked or cloned*/
+
+thread_info *fdtable_get_by_tid(pthread_t pthread);
+
+void fdtable_forked(void *function, void *function2); /*called when process forked or cloned*/
 int fdtable_getnumber();
+
 int fdtable_isEmpty();
+
 void fdtable_traversal();
+
 void fdtable_traversal_reverse();
 /*queue management*/
 
