@@ -819,10 +819,9 @@ void kerneltimer_timeover(struct timer_list *arg) {
             }
 
             // if net/blk queue need to be redistributed net/blk flag is checked by under conditional statement
-            if(core_counter[NUMBER_OF_SOCKETS - i][min] < 2){
+            if (core_counter[NUMBER_OF_SOCKETS - i][min] < 2) {
                 //can't change
-            }
-            else if (max == NET_QUEUE_INDEX) {
+            } else if (max == NET_QUEUE_INDEX) {
                 t_tmp = net_queue_util_avg[NUMBER_OF_SOCKETS - i] - T_CHANGE;
                 if (min == NET_SYS_INDEX) {
                     if (t_tmp > net_sys_util_avg[NUMBER_OF_SOCKETS - i]) {
@@ -916,7 +915,7 @@ void kerneltimer_timeover(struct timer_list *arg) {
                 cpumask_set_cpu(core, &affinity_mask);
                 irq_set_affinity_hint(irq_blk[j], &affinity_mask);
 
-                if (blk_end_per[NUMBER_OF_SOCKETS - k - 1] == blk_start_per[NUMBER_OF_SOCKETS - k - 1] + i) {
+                if (blk_end_per[NUMBER_OF_SOCKETS - k - 1] + i == blk_start_per[NUMBER_OF_SOCKETS - k - 1]) {
                     k = k + 1;
                     k = k % socket_number;
                     i = 0;
