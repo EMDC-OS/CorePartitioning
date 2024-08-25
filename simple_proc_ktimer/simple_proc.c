@@ -979,7 +979,7 @@ static int show_stat_irq(struct seq_file *p, void *v) {
         seq_printf(p, "%d", p_irq[i]);
         seq_putc(p, '\n');
     }
-
+    // show_stat_irq function
     return 0;
 }
 
