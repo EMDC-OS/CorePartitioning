@@ -1,1 +1,0 @@
-cmd_/home/hadoop/CorePartitioning/simple_proc_ktimer/built-in.o :=  rm -f /home/hadoop/CorePartitioning/simple_proc_ktimer/built-in.o; ar rcsD /home/hadoop/CorePartitioning/simple_proc_ktimer/built-in.o

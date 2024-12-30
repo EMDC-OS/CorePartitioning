@@ -1,1 +1,0 @@
-cmd_/home/ku-sslab/CorePartitioning/simple_proc_ktimer/built-in.a := rm -f /home/ku-sslab/CorePartitioning/simple_proc_ktimer/built-in.a; ar cDPrST /home/ku-sslab/CorePartitioning/simple_proc_ktimer/built-in.a 

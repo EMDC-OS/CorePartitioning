@@ -1,3 +1,0 @@
-/Users/changyulee/Desktop/cglab/corepart2/CorePartitioning/cmake-build-debug/CMakeFiles/CorePartitioning.dir
-/Users/changyulee/Desktop/cglab/corepart2/CorePartitioning/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Users/changyulee/Desktop/cglab/corepart2/CorePartitioning/cmake-build-debug/CMakeFiles/rebuild_cache.dir

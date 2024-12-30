@@ -1,1 +1,0 @@
-cmd_/home/hadoop/CorePartitioning/simple_proc_ktimer/simple_proc.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/hadoop/CorePartitioning/simple_proc_ktimer/simple_proc.ko /home/hadoop/CorePartitioning/simple_proc_ktimer/simple_proc.o /home/hadoop/CorePartitioning/simple_proc_ktimer/simple_proc.mod.o

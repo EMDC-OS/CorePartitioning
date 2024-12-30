@@ -1,1 +1,0 @@
-cmd_/home/ku-sslab/CorePartitioning/simple_proc_ktimer/Module.symvers := sed 's/ko$$/o/' /home/ku-sslab/CorePartitioning/simple_proc_ktimer/modules.order | scripts/mod/modpost  -a   -o /home/ku-sslab/CorePartitioning/simple_proc_ktimer/Module.symvers -e -i Module.symvers   -T -
