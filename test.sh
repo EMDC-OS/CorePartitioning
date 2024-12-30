@@ -1,0 +1,2 @@
+LD_PRELOAD=./CPART.so ping 127.0.0.1
+
